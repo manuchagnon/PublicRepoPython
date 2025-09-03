@@ -1,0 +1,430 @@
+from maya import cmds
+
+
+######
+#
+#    Switch IK/FK 
+#    
+#    ce sript permet de créer un switch ik/ fk sur une chaine de bones et de créer les controler, les contraintes dans le node editor, etc
+#    
+#    24/07/2025
+#    v 002
+#
+######
+
+###########################################################################
+
+#reinitialize
+   
+#fonction pour supprimer ce que le script vien de créer
+def reinitialize(created) :
+    print(created)
+    if created != [] :
+        for element_created in created :
+            if isinstance(element_created, list) :
+                #index = created.index(list_created)
+                for list_element in element_created :  
+                    if cmds.objExists(list_element) :
+                        cmds.delete(list_element)
+                        print(list_element,"a été supprimé")
+            else :
+                cmds.delete(element_created)
+                print(element_created,"a été supprimé")
+    else : 
+        print("aucun élément supprimé")
+    
+
+###########################################################################
+
+#variables globales
+created = []
+
+ribbon_toggle = 0
+
+symetrize = 0
+
+
+###########################################################################
+
+def duplicate_chain(chain, type) :
+    
+    duplicated_list = []
+    
+    for chain_element in chain :
+        #index
+        element_index = chain.index(chain_element)
+        
+        chain_element_pos = cmds.xform(chain_element, ws=1, q=1, t=1)
+        chain_element_rot = cmds.xform(chain_element, ws=1, q=1, ro=1)
+                
+        if cmds.objectType(chain_element) == "joint" :
+            cmds.select(clear=True)
+            duplicated_element = cmds.joint(name = f'{chain_element}_{type}')
+            cmds.delete(cmds.parentConstraint(chain_element, duplicated_element))
+            cmds.makeIdentity(duplicated_element, apply = 1, t=1, r=1, s=1)
+        else :
+            print("pas joint")
+        
+        duplicated_list.append(duplicated_element)
+                
+        #parenter
+        if element_index > 0 :
+            print(f'je veux parenter {duplicated_list[element_index]} à {duplicated_list[element_index-1]}')
+            cmds.parent(duplicated_list[element_index], duplicated_list[element_index-1])
+            
+
+           
+    return duplicated_list
+
+def duplicate_joint_chain(joint_chain, type) :
+    
+    duplicated_joint_chain = duplicate_chain(joint_chain, type)
+    
+    for duplicated_joint, joint in zip(duplicated_joint_chain, joint_chain) :
+        #index
+        joint_index = duplicated_joint_chain.index(duplicated_joint)
+        #nouveau nom avec le type IK ou Fk
+        new_name = cmds.rename(duplicated_joint, f'{joint}_{type}')
+        #j'enlève l'ancien de la list et je le remet avec le nouveau nom
+        duplicated_joint_chain.pop(joint_index)
+        duplicated_joint_chain.insert(joint_index, new_name)
+
+    duplicated_group = cmds.group(duplicated_joint_chain[0], name=f'{joint_chain[0]}_{type}_grp')
+    #si le groupe IK ou FK est dans une hiérarchie, l'enlever
+    if cmds.listRelatives(duplicated_group, parent = 1) :
+        cmds.parent(duplicated_group, world = 1)
+        
+    cmds.setAttr(f'{duplicated_group}.visibility', 0)
+
+    #liste retournée
+    print(f'la liste joint_chain_{type} : {duplicated_joint_chain}')    
+    
+    return duplicated_joint_chain, duplicated_group
+    
+def create_FK(joint_chain, offset_pos, controler_normal, radius) :
+    
+    #dupliquer la joint_chain de base
+    joint_chain_FK, FK_group = duplicate_joint_chain(joint_chain, type = "FK")
+    
+    controler_created = []
+    controler_ZRO_grp_created = []
+
+    #créer le set de selection
+    FK_set = cmds.sets(name = f'{joint_chain_FK[0]}_set', empty = 1)
+
+    #créer les controler et leur group    
+    for joint in joint_chain_FK :
+
+        #créer le controler et son ZRO_grp au dessus 
+        controler = cmds.circle(name = f"ctl_{joint}", normal = controler_normal, radius = radius)
+        cmds.delete(controler, constructionHistory=True) 
+        controler_ZRO_grp = cmds.group(controler[0], name = f"{joint}_ZRO_grp")
+
+        #ajout dans les listes des controler et controler ZRO_grp
+        controler_created.append(controler[0])
+        controler_ZRO_grp_created.append(controler_ZRO_grp)
+        
+        #ajouter le controler au set de selection
+        cmds.sets(controler[0], add = FK_set)
+        
+        cmds.delete(cmds.parentConstraint(joint, controler_ZRO_grp))
+        
+        """
+        #positionner
+        joint_pos = cmds.xform(joint, q=1, ws=1, t=1)
+        #additionnezr la pos du joint et un offset
+        controler_offset_pos = [joint_pos[0] + offset_pos[0], joint_pos[1] + offset_pos[1], joint_pos[2] + offset_pos[2]]
+
+        #orienter
+        joint_rot = cmds.xform(joint, q=1, ws=1, ro=1)
+        
+        print(f'le controler {controler[0]} a pos = {joint_pos} et rot = {joint_rot}')
+
+        #appliquer la pos et la rot au ZRO_grp du controler
+        cmds.xform(controler_ZRO_grp, ws=1, t = controler_offset_pos, ro = joint_rot)
+        """
+        #index
+        controler_index = joint_chain_FK.index(joint)
+        
+        #parenter
+        if controler_index > 0 :
+            print(f'je veux parenter {controler_ZRO_grp_created[controler_index]} à {controler_created[controler_index-1]}')
+            cmds.parent(controler_ZRO_grp_created[controler_index], controler_created[controler_index-1])
+
+        #contraindre les joints
+        cmds.connectAttr(f'{controler_created[controler_index]}.rotate', f'{joint}.rotate')
+
+        
+            
+    return controler_created, controler_ZRO_grp_created, joint_chain_FK, FK_group
+    
+def create_IK(joint_chain, IK_handle_name, pole_vector, radius) :
+    
+    joint_chain_IK, IK_group = duplicate_joint_chain(joint_chain, type = "IK")
+    
+    IK_handle = cmds.ikHandle(name = IK_handle_name, sj=joint_chain_IK[0], ee=joint_chain_IK[-1], sol='ikRPsolver')    
+    cmds.setAttr(f'{IK_handle[0]}.visibility', 0)
+    
+    #controler en forme de cube
+    #cube_points = [0.5, 0.5, 0.5],[0.5, 0.5, -0.5],[-0.5, 0.5, -0.5],[-0.5, -0.5, -0.5],[0.5, -0.5, -0.5],[0.5, 0.5, -0.5],[-0.5, 0.5, -0.5],[-0.5, 0.5, 0.5],[0.5, 0.5, 0.5],[0.5, -0.5, 0.5],[0.5, -0.5, -0.5],[-0.5, -0.5, -0.5],[-0.5, -0.5, 0.5],[0.5, -0.5, 0.5],[-0.5, -0.5, 0.5],[-0.5, 0.5, 0.5]
+    cube_points = [0.5*radius, 0.5*radius, 0.5*radius],[0.5*radius, 0.5*radius, -0.5*radius],[-0.5*radius, 0.5*radius, -0.5*radius],[-0.5*radius, -0.5*radius, -0.5*radius],[0.5*radius, -0.5*radius, -0.5*radius],[0.5*radius, 0.5*radius, -0.5*radius],[-0.5*radius, 0.5*radius, -0.5*radius],[-0.5*radius, 0.5*radius, 0.5*radius],[0.5*radius, 0.5*radius, 0.5*radius],[0.5*radius, -0.5*radius, 0.5*radius],[0.5*radius, -0.5*radius, -0.5*radius],[-0.5*radius, -0.5*radius, -0.5*radius],[-0.5*radius, -0.5*radius, 0.5*radius],[0.5*radius, -0.5*radius, 0.5*radius],[-0.5*radius, -0.5*radius, 0.5*radius],[-0.5*radius, 0.5*radius, 0.5*radius]
+    IK_controler = cmds.curve(d = 1, p = cube_points, name = f'{IK_handle_name}_controler')
+    IK_controler_ZRO_grp = cmds.group(IK_controler, name = f'{IK_controler}_ZRO_grp')
+    
+    #déplacer le ZRO_grp du controler sur la ik_handle
+    IK_handle_pos = cmds.xform(IK_handle[0], ws=1, q=1, t=1)
+    IK_handle_rot = cmds.xform(IK_handle[0], ws=1, q=1, ro=1)
+    cmds.xform(IK_controler_ZRO_grp, ws=1, t=IK_handle_pos, ro=IK_handle_rot)
+    
+    cmds.parent(IK_handle[0], IK_controler)
+    
+    if cmds.checkBox(opposite_ik_controler, q=1, value=1) :
+        cmds.setAttr(f'{IK_controler_ZRO_grp}.scaleX', -1)
+        
+    '''
+    #pole vector
+    pole_vector_amount = len(joint_chain) % 3
+    for i in range(1, pole_vector_amount)
+        ctl_pole = cmds.circle(n= f'{joint_chain[i-1]}_pole_vector', radius = radius*0.5)
+        ctl_pole_grp = cmds.group(n=f'{ctl_pole}_ZRO_grp', e=1)
+        cmds.parent(ctl_pole, ctl_pole_grp)
+    '''    
+        
+        
+    
+    
+    return IK_handle, IK_controler, IK_controler_ZRO_grp, joint_chain_IK, IK_group
+
+def create_switch_IK_FK(joint_chain, joint_chain_IK, joint_chain_FK, IK_group, FK_group, IK_controler_ZRO_grp, offset_pos) :
+    #créer le controler contenant l'attribut switch IK/FK
+    switch_controler = cmds.circle(name = f'{joint_chain[0]}_switch_IK_FK',radius = int(cmds.textField(ctl_scale, q=1, text=1)), normal = [1,0,0]) 
+    cmds.delete(switch_controler, constructionHistory=True)
+    switch_controler.remove(switch_controler[1])
+    
+    switch_controler_ZRO_grp = cmds.group(switch_controler, name = f'{switch_controler}_ZRO_grp')
+    switch_controler_pos = cmds.xform(joint_chain[0], ws = 1, q = 1, t = 1)
+    switch_controler_offset_pos = [switch_controler_pos[0], switch_controler_pos[1] + offset_pos*offset_pos, switch_controler_pos[2]] 
+    
+    cmds.xform(switch_controler_ZRO_grp, ws = 1, t = switch_controler_offset_pos)
+    
+    #vérouiller les transform du switch_controler
+    cmds.setAttr(f'{switch_controler[0]}.tx', lock = 1)
+    cmds.setAttr(f'{switch_controler[0]}.ty', lock = 1)
+    cmds.setAttr(f'{switch_controler[0]}.tz', lock = 1)
+    cmds.setAttr(f'{switch_controler[0]}.rx', lock = 1)
+    cmds.setAttr(f'{switch_controler[0]}.ry', lock = 1)
+    cmds.setAttr(f'{switch_controler[0]}.rz', lock = 1)
+    cmds.setAttr(f'{switch_controler[0]}.sx', lock = 1)
+    cmds.setAttr(f'{switch_controler[0]}.sy', lock = 1)
+    cmds.setAttr(f'{switch_controler[0]}.sz', lock = 1)    
+        
+    #créer un nouveau attribut switch_IK_FK
+    cmds.addAttr(switch_controler[0], ln = "switch_IK_FK", at = "float", keyable = 1 , min = 0, max = 1, dv = 0)
+
+
+    
+    node_created = []
+    
+    #connecter les attributs
+    for joint_IK, joint_FK, joint in zip(joint_chain_IK, joint_chain_FK, joint_chain) :
+        print(f"le joint IK '{joint_IK}' et le joint FK '{joint_FK}' vont influencer le joint {joint}")
+        #créer le pair_blend
+        pair_blend = cmds.shadingNode("pairBlend", asUtility=1, name=f'{joint}_pairBlend')
+        
+        #connect les rotates au pair_blend
+        cmds.connectAttr(f'{joint_FK}.rotate', f'{pair_blend}.inRotate1')
+        cmds.connectAttr(f'{joint_IK}.rotate', f'{pair_blend}.inRotate2')
+        cmds.connectAttr(f'{pair_blend}.outRotate', f'{joint}.rotate')
+        
+        #connect l'attribut du switch_IK_FK à la weight du pairblend
+        cmds.connectAttr(f'{switch_controler[0]}.switch_IK_FK', f'{pair_blend}.weight')
+        
+        node_created.append(pair_blend)
+    
+    #♣créer node condition pour interpréter l'attribut du switch_IK_FK
+    inverse_attribut = cmds.shadingNode("condition", asUtility=1, name=f'{switch_controler}_condition')
+    cmds.connectAttr(f'{switch_controler[0]}.switch_IK_FK', f'{inverse_attribut}.firstTerm')
+    cmds.setAttr(f'{inverse_attribut}.operation', 5)
+    cmds.setAttr(f'{inverse_attribut}.secondTerm', 0.5)
+    cmds.setAttr(f'{inverse_attribut}.colorIfTrueR', 1)
+    cmds.setAttr(f'{inverse_attribut}.colorIfFalseR', 0)
+
+
+    #connecter l'attribut visibility des objets FK
+    cmds.connectAttr(f'{inverse_attribut}.outColorR', f'{joint_chain[0]}_FK_ZRO_grp.visibility')
+    
+    #connecter l'attribut visibility des objets IK
+    cmds.connectAttr(f'{inverse_attribut}.outColorG', f'{IK_controler_ZRO_grp}.visibility')    
+        
+    return node_created, switch_controler, switch_controler_ZRO_grp
+    
+def change_ribbon_toggle(value) :
+    global ribbon_toggle
+    ribbon_toggle = value
+    print(f'ribbon_toggle is {ribbon_toggle}')
+    
+    return ribbon_toggle
+    
+def created_ribbon(joint_chain, follicle_number) :
+    
+    follicle_created = []
+    surface_created = []
+
+    #create surface
+    for joint_duo in joint_chain :
+        #index
+        joint_duo_index = joint_chain.index(joint_duo)
+        
+        #si ce n'est pas le bout de la joint_chain
+        if joint_duo_index < len(joint_chain)-1 :
+            pos_start = cmds.xform(joint_duo, q=1, ws=1, t=1)
+
+            pos_end = cmds.xform(joint_chain[joint_duo_index+1], q=1, ws=1, t=1)
+
+            pos_middle = [(pos_end[0] + pos_start[0])*0.5 , (pos_end[1] + pos_start[1])*0.5, (pos_end[2] + pos_start[2])*0.5]
+
+            #rot_start = cmds.xform(joint_chain[joint_duo_index], q=1, ws=1, ro=1)
+            
+            distance_between = ((pos_end[0] - pos_start[0])**2 + (pos_end[1] - pos_start[1])**2 + (pos_end[2] - pos_start[2])**2)**0.5
+            
+            #je veux que la largeur de la surface soit la meme sur toute la longueur de la chain
+            if joint_duo_index == 0 :
+                width = distance_between*0.01
+            
+            #créer une surface
+            surface = cmds.nurbsPlane(name=f'{joint_duo}_srf', ax=[0,1,0] , w=distance_between, lr=width, d=3, u=1, v=1, ch=1)
+
+            
+            #coller les surfaces entre elles
+            
+            #créer les follicules
+            for follicle_index in range(int(follicle_number)):
+                #parameterU
+                u = follicle_index / (int(follicle_number)-1) # espacement équidistant sur U
+                #parameterV
+                v =  0.5 
+    
+                #Créer le follicle node avec sa shape et son transform
+                follicle_shape = cmds.createNode("follicle", name=f"{surface[0]}_follicleShape_{follicle_index}")
+                follicle_transform = cmds.listRelatives(follicle_shape, parent=True)[0]
+                cmds.rename(follicle_transform, f"{surface[0]}_follicle_{follicle_index}")
+                follicle_transform = f"{surface[0]}_follicle_{follicle_index}"
+                
+                cmds.connectAttr(f"{surface[0]}.local", f"{follicle_shape}.inputSurface", f=True)
+                cmds.connectAttr(f"{surface[0]}.worldMatrix[0]", f"{follicle_shape}.inputWorldMatrix", force=True)
+                cmds.connectAttr(f"{follicle_shape}.outRotate", f"{follicle_transform}.rotate", f = 1)
+                cmds.connectAttr(f"{follicle_shape}.outTranslate", f"{follicle_transform}.translate", f = 1)
+        
+                
+                cmds.setAttr(f"{follicle_shape}.parameterU", u)
+                cmds.setAttr(f"{follicle_shape}.parameterV", v)
+                
+                follicle_created.append(follicle_shape)
+                surface_created.append(surface[0]) 
+            
+            #déplacer la surface
+            cmds.xform(surface, ws=1, t=pos_middle)
+            cmds.delete(cmds.orientConstraint(joint_chain[joint_duo_index], surface))
+    
+    return follicle_created, surface_created
+    
+    
+    
+    
+def create_IK_FK_switch(joint_chain, follicle_number) :
+    if not joint_chain :
+        print("please select a joint chain before executing the script")
+    
+    #enlève la sélection
+    cmds.select(clear=1)
+    
+    #la FK chain
+    controler_created, controler_ZRO_grp_created, joint_chain_FK, FK_group = create_FK(joint_chain, offset_pos = [0,0,0], controler_normal = [1,0,0], radius = int(cmds.textField(ctl_scale, q=1, text=1)))
+    
+    #la IK_chain
+    IK_handle, IK_controler, IK_controler_ZRO_grp, joint_chain_IK, IK_group = create_IK(joint_chain, IK_handle_name = f'{joint_chain[-1]}_IK_handle', pole_vector = 1, radius = int(cmds.textField(ctl_scale, q=1, text=1)))
+    
+    #le controler switch et relier les attributs
+    node_created, switch_controler, switch_controler_ZRO_grp = create_switch_IK_FK(joint_chain, joint_chain_IK, joint_chain_FK, IK_group, FK_group, IK_controler_ZRO_grp, offset_pos = int(cmds.textField(ctl_scale, q=1, text=1)))
+
+    #variable poubelle
+    global created
+    created = IK_group, FK_group, controler_created, controler_ZRO_grp_created, IK_handle, IK_controler, IK_controler_ZRO_grp, node_created, switch_controler, switch_controler_ZRO_grp
+    
+    #la fonction ribbon si la case est cochée
+    if ribbon_toggle == 1 :
+        print(f'ribbon_toggle is {ribbon_toggle}')
+        print(f'follicle_number is {follicle_number}')
+        follicle_created, surface_created = created_ribbon(joint_chain, follicle_number)
+        
+        created += follicle_created, surface_created        
+    
+    
+    return created
+
+###########################################################################  
+
+#création de la window
+
+#supprimer la window si elle existe deja
+if cmds.window("Switch_IK_FK", exists=1):
+    cmds.deleteUI("Switch_IK_FK")
+    
+window = cmds.window("Switch_IK_FK", title="Switch_IK_FK", width=520)
+cmds.columnLayout(adjustableColumn = 2)
+
+cmds.rowColumnLayout(numberOfColumns = 2, columnAlign= (100, "left"), columnWidth = [(1,240), (2,240)])
+cmds.setParent('..')
+cmds.showWindow(window)
+
+#########################################################################
+
+#layout de la window
+
+
+
+#title
+cmds.text(label="Switch_IK_FK", height = 50 , align="center")
+
+cmds.separator(height = 20, style = "in")
+
+#sélectionner les joints dans un premier temps
+cmds.text(label="Select the first to the last joint of a joint chain to execute the switch IK/FK script", align='center')
+cmds.separator(height = 20, style = "none")  
+'''
+#paramétrage ribbon
+cmds.rowLayout(numberOfColumns=3, columnWidth3=(100,200,200), adjustableColumn=2)
+ribbon_toggle = cmds.checkBox(label='With Ribbon', value=False, changeCommand=change_ribbon_toggle)
+follicle_number_field = cmds.textField(placeholderText="Write a number of follicle")      
+cmds.setParent('..')
+cmds.separator(height = 5, style = "none")  
+'''
+
+#paramètres controlers
+cmds.rowLayout(numberOfColumns=3, columnWidth3 = (120,150, 100))
+cmds.text(label="Scale of all controlers", align='center')
+ctl_scale = cmds.textField(placeholderText='1')
+opposite_ik_controler = cmds.checkBox(label='opposite ik controler', value=False)
+
+
+cmds.setParent('..')
+cmds.separator(height = 5, style = "none")  
+
+
+
+#apppliquer le script sur cette joint chain
+joint_selected = []
+cmds.button(label="Apply Switch IK/FK", bgc = (0.2, 0.6, 0.25), command=lambda *_: create_IK_FK_switch(cmds.ls(sl=1), 0))#cmds.textField(follicle_number_field, q=1, text=1)
+cmds.separator(height = 5, style = "none")  
+
+
+#bouton reinitialize
+cmds.button(label="Reinitialize", command=lambda *_: reinitialize(created))
+
+#infos
+cmds.text(label="v.02 24/07/2025 Emmanuel Chagnon", height = 50 , align="center")
+
+
+
+
+
