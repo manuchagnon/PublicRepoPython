@@ -1,0 +1,167 @@
+from maya import cmds
+
+######
+#
+#    Tool MATRIX
+#    
+#    ce sript contraintes matrix entre driver et driven
+#    
+#    02/10/2025
+#    v 002
+#
+######
+
+###########################################################################
+       
+def matrix_constraint(list, offset):
+    
+    #séparer les driver des driven
+    middle_list = len(list)*0.5
+    middle_list_decimal = int(str(middle_list).split(".")[1])
+    if middle_list_decimal == 0 :
+        print("driver list and driven list have equal lenght")     
+
+    else :
+        print("driver list and driven list have unequal lenght, script cannot execute")
+        return
+    
+    driver_list = []
+    driven_list = []  
+      
+    for i in range(0, int(middle_list)):
+        driver = list[i]
+        driver_list.append(driver)
+    print(driver_list, " is driver_list")
+    
+    for i in range(int(middle_list), list.index(list[-1])+1):
+        driven = list[i]
+        driven_list.append(driven)
+    print(driven_list, " is driven_list")
+    
+   
+    for driver, driven in zip(driver_list, driven_list) :
+        #decompose
+        dcm_node = cmds.createNode("decomposeMatrix", n=f'{driver}_dcm')    
+            
+        #mult        
+        mult_node = cmds.createNode("multMatrix", n=f'{driver}_mult')
+        cmds.connectAttr(f'{driver}.worldMatrix[0]', f'{mult_node}.matrixIn[0]')
+        cmds.connectAttr(f'{driven}.parentInverseMatrix[0]', f'{mult_node}.matrixIn[1]')
+        cmds.connectAttr(f'{mult_node}.matrixSum', f'{dcm_node}.inputMatrix')
+            
+        if offset == 1 :
+            mult_offset_node = cmds.createNode("multMatrix", n=f'{driver}_offset_mult')
+            cmds.connectAttr(f'{driver}.worldInverseMatrix[0]', f'{mult_offset_node}.matrixIn[0]')
+            cmds.connectAttr(f'{driven}.worldMatrix[0]', f'{mult_offset_node}.matrixIn[1]')
+            
+            hold_offset_node = cmds.createNode("holdMatrix", n=f'{driver}_offset_hold')
+            cmds.connectAttr(f'{mult_offset_node}.matrixSum', f'{hold_offset_node}.inMatrix') #on connecte
+            
+            
+            cmds.disconnectAttr(f'{mult_offset_node}.matrixSum', f'{hold_offset_node}.inMatrix') #et on connecte direct
+            cmds.connectAttr(f'{hold_offset_node}.outMatrix', f'{mult_node}.inMatrix[2]', f=1)
+
+                 
+        #translate
+        if cmds.checkBox(trans_X_box, q=1, value=1) == True and cmds.checkBox(trans_Y_box, q=1, value=1) == True and cmds.checkBox(trans_Z_box, q=1, value=1) == True :
+            cmds.connectAttr(f'{dcm_node}.outputTranslate', f'{driven}.translate')
+        else :
+            if cmds.checkBox(trans_X_box, q=1, value=1) == True :
+                 cmds.connectAttr(f'{dcm_node}.outputTranslateX', f'{driven}.translateX')
+            if cmds.checkBox(trans_Y_box, q=1, value=1) == True :
+                 cmds.connectAttr(f'{dcm_node}.outputTranslateY', f'{driven}.translateY')
+            if cmds.checkBox(trans_Z_box, q=1, value=1) == True :
+                 cmds.connectAttr(f'{dcm_node}.outputTranslateZ', f'{driven}.translateZ')
+
+        #rotate
+        if cmds.checkBox(rot_X_box, q=1, value=1) == True and cmds.checkBox(rot_Y_box, q=1, value=1) == True and cmds.checkBox(rot_Z_box, q=1, value=1) == True :
+            cmds.connectAttr(f'{dcm_node}.outputRotate', f'{driven}.rotate')
+        else :
+            if cmds.checkBox(rot_X_box, q=1, value=1) == True :
+                 cmds.connectAttr(f'{dcm_node}.outputRotateX', f'{driven}.rotateX')
+            if cmds.checkBox(rot_Y_box, q=1, value=1) == True :
+                 cmds.connectAttr(f'{dcm_node}.outputRotateY', f'{driven}.rotateY')
+            if cmds.checkBox(rot_Z_box, q=1, value=1) == True :
+                 cmds.connectAttr(f'{dcm_node}.outputRotateZ', f'{driven}.rotateZ')
+        
+        #scale
+        if cmds.checkBox(scale_X_box, q=1, value=1) == True and cmds.checkBox(scale_Y_box, q=1, value=1) == True and cmds.checkBox(scale_Z_box, q=1, value=1) == True :
+            cmds.connectAttr(f'{dcm_node}.outputScale', f'{driven}.scale')
+        else :
+            if cmds.checkBox(scale_X_box, q=1, value=1) == True :
+                 cmds.connectAttr(f'{dcm_node}.outputScaleX', f'{driven}.scaleX')
+            if cmds.checkBox(scale_Y_box, q=1, value=1) == True :
+                 cmds.connectAttr(f'{dcm_node}.outputScaleY', f'{driven}.scaleY')
+            if cmds.checkBox(scale_Z_box, q=1, value=1) == True :
+                 cmds.connectAttr(f'{dcm_node}.outputScaleZ', f'{driven}.scaleZ')
+
+#supprimer la window si elle existe deja
+if cmds.window("Matrix_constraints", exists=1):
+    cmds.deleteUI("Matrix_constraints")
+    
+window = cmds.window("Matrix_constraints", title="Matrix_constraints", width=520)
+cmds.columnLayout(adjustableColumn = 2)
+
+cmds.rowColumnLayout(numberOfColumns = 2, columnAlign= (100, "left"), columnWidth = [(1,240), (2,240)])
+cmds.setParent('..')
+cmds.showWindow(window)
+
+#########################################################################
+
+#layout de la window
+space = 20
+
+
+#title
+cmds.text(label="Matrix constraints", align='center')
+
+cmds.separator(height = space*2, style = "in")
+
+#parameters
+cmds.text(label="Translate Constraints : ", align='center')
+cmds.separator(height = space*.5, style = "none")
+cmds.rowLayout(numberOfColumns=3, columnWidth3=(180, 180, 180))
+trans_X_box = cmds.checkBox(label="Translate X", value =True) 
+trans_Y_box = cmds.checkBox(label="Translate Y", value =True) 
+trans_Z_box = cmds.checkBox(label="Translate Z", value =True) 
+cmds.setParent('..')
+
+cmds.separator(height = space*.5, style = "none")
+
+cmds.text(label="Rotate Constraints : ", align='center')
+cmds.separator(height = space*.5, style = "none")
+cmds.rowLayout(numberOfColumns=3, columnWidth3=(180, 180, 180))
+rot_X_box = cmds.checkBox(label="Rotate X", value =True) 
+rot_Y_box = cmds.checkBox(label="Rotate Y", value =True) 
+rot_Z_box = cmds.checkBox(label="Rotate Z", value =True) 
+cmds.setParent('..')
+
+cmds.separator(height = space*.5, style = "none")
+
+cmds.text(label="Scale Constraints : ", align='center')
+cmds.separator(height = space*.5, style = "none")
+cmds.rowLayout(numberOfColumns=3, columnWidth3=(180, 180, 180))
+scale_X_box = cmds.checkBox(label="Scale X", value =False) 
+scale_Y_box = cmds.checkBox(label="Scale Y", value =False) 
+scale_Z_box = cmds.checkBox(label="Scale Z", value =False) 
+cmds.setParent('..')
+
+cmds.separator(height = space*2, style = "in")
+    
+
+#bouttons
+cmds.text(label="In the same selection : ", align='left')
+cmds.text(label="    1 - Select all the driver", align='left')
+cmds.text(label="    2 - Then select all the driven in the correspondant order", align='left')
+cmds.text(label="    3 - Then press the button", align='left')
+cmds.separator(height = space, style = "none")
+
+cmds.button(label="Constraint without offset", bgc = (0.2, 0.6, 0.25), height = 40, command=lambda *_: matrix_constraint(cmds.ls(sl=1), offset=0) )
+
+cmds.separator(height = space, style = "none")
+
+cmds.button(label="Constraint with offset", bgc = (0.2, 0.6, 0.25), height = 40, command=lambda *_: matrix_constraint(cmds.ls(sl=1), offset=1) )
+            
+#infos
+cmds.text(label="v.01 02/10/2025 Emmanuel Chagnon", height = space*5 , align="center")
+
