@@ -25,7 +25,6 @@ Check out my media :
   - Mail : chagnon.emmanuel@gmail.com
   - Resume Pro : https://drive.google.com/drive/folders/1vw7Yl9z-w1vObgKibN18ATwdODarjtdM?usp=drive_link 
 
-Thanks :
 I want to thank my internship supervisors Simon Legrand and Gilles de Saint-Haubert at the Studio Benuts (La Hulpe, Belgium)
 for teaching me OOP programming and how to "python" the good way.
 
