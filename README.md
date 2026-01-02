@@ -20,10 +20,10 @@ My other Hard Skills are :
   - Unreal Engine
 
 Check out my media :
-   - Artstation : https://www.artstation.com/emmanuelchagnon7
+  - Artstation : https://www.artstation.com/emmanuelchagnon7
   - Linkedin : https://www.linkedin.com/in/emmanuel-chagnon-336408264/
-   - Mail : chagnon.emmanuel@gmail.com
-   - Resume Pro : https://drive.google.com/drive/folders/1vw7Yl9z-w1vObgKibN18ATwdODarjtdM?usp=drive_link 
+  - Mail : chagnon.emmanuel@gmail.com
+  - Resume Pro : https://drive.google.com/drive/folders/1vw7Yl9z-w1vObgKibN18ATwdODarjtdM?usp=drive_link 
 
 Thanks :
 I want to thank my internship supervisors Simon Legrand and Gilles de Saint-Haubert at the Studio Benuts (La Hulpe, Belgium)
