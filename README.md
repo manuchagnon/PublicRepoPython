@@ -7,6 +7,7 @@ My main programming skills are :
   - Python OOP
   - Pyside dynamic ui
   - Maya cmds
+    
 And i am learning :
   - Maya OpenMaya
   - Blender Python
