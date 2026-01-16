@@ -1,18 +1,18 @@
-Hello, my name is Emmanuel Chagnon, I am a Junior Rigging, TD and Pipeline Artist based in Paris, France.
+##Hello, my name is Emmanuel Chagnon, I am a Junior Rigging, TD and Pipeline Artist based in Paris, France.
 
 This is my public Git where i share custom python scripts.
 I know there is room for improvment but i am really motivated to continue learning, from others and by myself. 
 
-My main programming skills are :
+#My main programming skills are :
   - Python OOP
   - Pyside dynamic ui
   - Maya cmds
     
-And i am learning :
+#And i am learning :
   - Maya OpenMaya
   - Blender Python
 
-My other Hard Skills are :
+#My other Hard Skills are :
   - Maya
   - Blender
   - Nuke
@@ -20,7 +20,7 @@ My other Hard Skills are :
   - Substance Painter
   - Unreal Engine
 
-Check out my media :
+##Check out my media :
   - Artstation : https://www.artstation.com/emmanuelchagnon7
   - Linkedin : https://www.linkedin.com/in/emmanuel-chagnon-336408264/
   - Mail : chagnon.emmanuel@gmail.com
