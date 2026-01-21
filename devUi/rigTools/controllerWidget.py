@@ -2,6 +2,9 @@ import sys
 from PySide6 import QtWidgets, QtCore, QtGui
 
 from devUi.utils.api import *
+from headerWidget import HeaderWidget
+
+from devMaya.utils.api import create_FK_ctl, set_ctl_scale, rotate_ctl
 
 from maya import cmds
 
@@ -12,6 +15,10 @@ class ControllerWidget(QtWidgets.QWidget):
 
         # Separator
         _separator = Separator()
+
+
+        # Header
+        header = HeaderWidget(title = "Controller", color = get_color("blue"))
 
         # Create Controller
         self._combobox_parent = QtWidgets.QComboBox()
@@ -91,6 +98,7 @@ class ControllerWidget(QtWidgets.QWidget):
 
         # Main Layout
         _layout = QtWidgets.QVBoxLayout()
+        _layout.addWidget(header)
         _layout.addWidget(_separator)
         _layout.addWidget(_group_create)
         _layout.addWidget(_separator)
@@ -103,7 +111,7 @@ class ControllerWidget(QtWidgets.QWidget):
 
     def _create_ctl(self):
         print(">> Creating Controllers")
-
+        create_FK_ctl(obj_list=[])
 
     def _set_ctl_custom_scale(self):
         value = self._line_scale.text()
@@ -113,13 +121,14 @@ class ControllerWidget(QtWidgets.QWidget):
             if value == "":
                 value = 1.0
             else:
-                print(value, "is not accpeted, should be int or float")
+                print(value, "is not accepted, should be int or float")
                 return
 
         self._set_ctl_scale(value)
 
     def _set_ctl_scale(self, value):
         print(">> Setting Controller Scale to", value)
+        set_ctl_scale(ctl_list = [], scale = value)
 
     def _rotate_ctl(self, axis):
         degrees = self._line_degrees.text()
@@ -132,7 +141,8 @@ class ControllerWidget(QtWidgets.QWidget):
                 print(degrees, "is not accpeted, should be int")
                 return
 
-        print(">> Rotating Controller on", axis, "by", degrees, "degrees")
+        print(">> Rotating Controller on", axis, "axis by", degrees, "degrees")
+        rotate_ctl(ctl_list = [], axis = axis, degrees = degrees)
 
 def run():
     try:

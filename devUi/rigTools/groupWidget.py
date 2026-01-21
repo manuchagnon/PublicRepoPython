@@ -25,6 +25,7 @@ class GroupWidget(QtWidgets.QWidget):
         self._combobox_gizmo.currentIndexChanged.connect(self.refresh)
 
         _button_create_grp = QtWidgets.QPushButton("Create group on selection")
+        _button_create_grp.setFixedHeight(50)
         _button_create_grp.clicked.connect(self._create_grp)
 
         # Gizmo Object Name

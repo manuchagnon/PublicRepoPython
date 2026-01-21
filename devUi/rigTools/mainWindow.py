@@ -4,6 +4,10 @@ from maya import cmds
 
 from PySide6 import QtCore, QtGui, QtWidgets
 
+from DevUi.utils.api import *
+
+from headerWidget import HeaderWidget
+
 from controllerWidget import ControllerWidget
 from follicleWidget import FollicleWidget
 from jointWidget import JointWidget
@@ -23,6 +27,8 @@ class MainWindow(QtWidgets.QMainWindow):
         # Title
         _title_label = QtWidgets.QLabel("Rig Tools")
         _title_label.setAlignment(QtCore.Qt.AlignCenter)
+        # Header
+        _header = HeaderWidget(title = "Rig Tools", color = orange)
 
         # Controller Widget
         _controller_widget = ControllerWidget()
@@ -49,6 +55,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # Main Layout
         _layout = QtWidgets.QVBoxLayout()
+        _layout.addWidget(_header)
         _layout.addWidget(_title_label)
         _layout.addWidget(_tabs)
         _layout.addWidget(_infos_label)

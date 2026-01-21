@@ -45,7 +45,6 @@ def create_jnt(obj_list = None, parent = 1, suffix="") -> list[str]:
             obj_parent = cmds.listRelatives(obj, parent=True, fullPath=1)[0]
             cmds.parent(jnt, obj_parent)
             cmds.xform(jnt, t=[0, 0, 0], ro=[0, 0, 0])
-
             cmds.parent(obj, jnt)
 
         jnt_created.append(jnt)

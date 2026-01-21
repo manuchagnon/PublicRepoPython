@@ -115,7 +115,7 @@ def find_furthest_vertex_to_point(obj_name, point=(0, 0, 0)):
     except RuntimeError as e:
         print(f"Erreur lors du traitement de l'objet : {e}")
         return None
-
+    
 
 def run():
     import maya.cmds as cmds

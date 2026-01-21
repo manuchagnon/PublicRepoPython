@@ -3,6 +3,8 @@ from PySide6 import QtWidgets, QtCore, QtGui
 
 from devUi.utils.api import *
 from devMaya.utils.api import create_jnt
+from headerWidget import HeaderWidget
+
 
 from maya import cmds
 
@@ -11,6 +13,8 @@ class JointWidget(QtWidgets.QWidget):
     def __init__(self, parent=None):
         super().__init__()
 
+        header = HeaderWidget(title = "Joint", color = get_color("pink"))
+    
         # Suffix
         self._line_suffix = QtWidgets.QLineEdit()
         self._line_suffix.setPlaceholderText("None")
@@ -27,8 +31,12 @@ class JointWidget(QtWidgets.QWidget):
         _layout.addRow("Suffix :", self._line_suffix)
         _layout.addRow(button)
 
-        self.setLayout(_layout)
 
+        # Main Layout
+        _layout_main = QtWidgets.QVBoxLayout()
+        _layout_main.addWidget(_header)
+        _layout_main.addLayout(_layout)
+        self.setLayout(_layout_main)
 
     def _create_joint_on_selection(self):
         """

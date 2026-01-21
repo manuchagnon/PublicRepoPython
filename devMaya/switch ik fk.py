@@ -11,12 +11,32 @@ class Main:
 
     _CREATOR = "Emmanuel"
     _NAME = "main"
+    
     _CONTROLLER_SCALE = 1
-
-    def __init__(self, name=_NAME, ctl_scale=_CONTROLLER_SCALE):
+    
+	
+    def __init__(self, name=_NAME, ctl_scale=_CONTROLLER_SCALE, creator=_CREATOR):
         print("Main created")
         self._ctl_scale = ctl_scale
         self._name = name
+        self.creator = creator
+ 
+        _CONTROLLER_FK_SHAPE = "circle"
+	    _CONTROLLER_FK_COLOR = "green"
+    
+		_CONTROLLER_IK_SHAPE = "cube"
+        _CONTROLLER_IK_COLOR = "red"
+
+		_CONTROLLER_PARAMETERS_SHAPE = "cross"
+  	    _CONTROLLER_PARAMETERS_COLORS = "dark-blue"
+
+		_CONTROLLER_BENDY_SHAPE = "round-cube"
+  	    _CONTROLLER_BENDY_COLOR = "yellow"
+    
+   		_CONTROLLER_TWEAK_SHAPE = "circle"
+   		self._CONTROLLER_TWEAK_COLOR = "red"
+    
+       
 
     def set_scale(self, ctl_scale):
         self._ctl_scale = ctl_scale
@@ -30,6 +50,8 @@ class Main:
     def name(self):
         return self.name
 
+	def creator(self):
+        return self.creator
 
 class Limb(Main):
     """
@@ -88,15 +110,26 @@ class Limb(Main):
     def create_FK_chain(self):
         """
         Duplicate the joint chain and make it FK chain        
+        return: self.FK_chain
         """
         fk_joint_chain = self.duplicate_joint_chain(self.joint_chain, suffix = "FK")
-        
+
 
     def create_IK_chain(self):
         """
         Duplicate the joint chain and make it IK chain        
+        return: self.IK_chain
         """
         ik_joint_chain = self.duplicate_joint_chain(self.joint_chain, suffix = "IK")
+
+	def create_switch_IK_FK(self, IK_chain, FK_chain):
+        """
+        Create the switching between self.IK and self.FK chain
+        """
+        
+	def create_stretchy_limb(self, chain, ctl_bendy_amount)
+        
+
 
 def created_nodes(self):
         return self._created_nodes
@@ -178,24 +211,13 @@ class LimbWindow(QtWidgets.QMainWindow):
         limb = Limb()
         limb.set_joint_chain(joint_chain=joint_chain)
 
-
-
-
-
         # Store
         self._CREATED_LIMBS += limb
-
-
-
-
-
 
     def deconstruct(self):
         print("> Deconstruct")
         for limb in self._CREATED_LIMBS:
             cmds.delete(limb.created_nodes())
-
-
 
 def run():
     try:

@@ -10,7 +10,7 @@ from .controller import (
 )
 
 from .follicle import (
-    create_follicle_on_surface
+    create_flc_on_surface
 )
 
 from .joint import (
@@ -20,6 +20,8 @@ from .joint import (
 from .group import (
     create_grp
 )
+
+from .set import create_set, add_to_set
 
 if __name__ == '__main__':
     print("test")

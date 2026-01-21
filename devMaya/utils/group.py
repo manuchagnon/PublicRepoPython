@@ -25,7 +25,7 @@ def create_grp(obj_list = None, gizmo = 0, gizmo_target_obj = None, suffix = "")
         suffix = "_" + suffix
 
     for obj in obj_list:
-        grp = cmds.group(n=f'{obj}_{suffix}_grp', empty=1)
+        grp = cmds.group(n=f'{obj}{suffix}_grp', empty=1)
 
         pos = cmds.xform(obj, q=1, ws=1, t=1)
         rot = cmds.xform(obj, q=1, ws=1, rotation=1)
@@ -37,15 +37,13 @@ def create_grp(obj_list = None, gizmo = 0, gizmo_target_obj = None, suffix = "")
 
         cmds.parent(obj, grp)
 
-
-        if gizmo == "world":
+        if gizmo == 1:
             cmds.xform(f'{grp}.scalePivot', ws=1, t=[0, 0, 0], ro=[0, 0, 0])
             cmds.xform(f'{grp}.rotatePivot', ws=1, t=[0, 0, 0], ro=[0, 0, 0])
 
-        elif gizmo:
-            pos = cmds.xform(gizmo, q=1, ws=1, t=1)
-            rot = cmds.xform(gizmo, q=1, ws=1, ro=1)
-            print("rot =", rot, "pos = ", pos)
+        elif gizmo == 2:
+            pos = cmds.xform(gizmo_target_obj, q=1, ws=1, t=1)
+            rot = cmds.xform(gizmo_target_obj, q=1, ws=1, ro=1)
             cmds.xform(f'{grp}.scalePivot', ws=1, t=pos, ro=rot)
             cmds.xform(f'{grp}.rotatePivot', ws=1, t=pos, ro=rot)
 
