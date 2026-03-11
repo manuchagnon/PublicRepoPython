@@ -1,186 +1,211 @@
-import sys
-from PySide6 import QtWidgets, QtCore, QtGui
-
-from devUi.utils.api import *
-from headerWidget import HeaderWidget
-
-from devMaya.utils.api import create_FK_ctl, set_ctl_scale, rotate_ctl
-
+from Qt import QtWidgets, QtCore, QtGui
 from maya import cmds
+
+from devUi.utils.api import get_color, color_dict
+from devUi.customWidgets.api import HeaderWidget, TreeWidget
+
+from devMaya.utils.api import create_ctls, scale_ctls, rotate_ctls, create_jnts, color_ctls, ctl_custom_shapes
 
 class ControllerWidget(QtWidgets.QWidget):
 
     def __init__(self, parent=None):
         super().__init__()
 
-        # Separator
-        _separator = Separator()
+        # Main Layout
+        layout = QtWidgets.QVBoxLayout()
+        layout.addWidget(HeaderWidget(title = "Controller", color = get_color("green")))
+        layout.addSpacing(5)
+        layout.addWidget(self._build_create_group())
+        layout.addSpacing(5)
+        layout.addLayout(self._build_scale_layout())
+        layout.addSpacing(5)
+        layout.addWidget(self._build_color_group())
+        layout.addSpacing(5)
+        layout.addWidget(self._build_shape_group())
 
+        self.setLayout(layout)
 
-        # Header
-        header = HeaderWidget(title = "Controller", color = get_color("blue"))
-
+    # UI
+    def _build_create_group(self) -> QtWidgets.QGroupBox:
         # Create Controller
         self._combobox_parent = QtWidgets.QComboBox()
         self._combobox_parent.addItems(["no parenting", "child", "parent"])
 
         self._box_add_jnt = QtWidgets.QCheckBox("Add joint inside controller")
 
-        _button_create_ctl = QtWidgets.QPushButton("Create Circle Controller on Selection")
-        _button_create_ctl.clicked.connect(self._create_ctl)
+        button_create_ctl = QtWidgets.QPushButton("Create Circle Controller on Selection")
+        button_create_ctl.clicked.connect(self._create_ctl)
 
         # Create controller Layout
-        _create_layout = QtWidgets.QFormLayout()
-        _create_layout.setLabelAlignment(QtCore.Qt.AlignRight)
-        _create_layout.addRow("Choose a parenting option :", self._combobox_parent)
-        _create_layout.addRow(self._box_add_jnt)
-        _create_layout.addRow(_button_create_ctl)
+        create_layout = QtWidgets.QFormLayout()
+        create_layout.setLabelAlignment(QtCore.Qt.AlignRight)
+        create_layout.addRow("Choose a parenting option :", self._combobox_parent)
+        create_layout.addRow(self._box_add_jnt)
+        create_layout.addRow(button_create_ctl)
 
-        _group_create = QtWidgets.QGroupBox("Create")
-        _group_create.setLayout(_create_layout)
+        group_create = QtWidgets.QGroupBox("Create")
+        group_create.setLayout(create_layout)
 
+        return group_create
 
+    def _build_scale_layout(self) -> QtWidgets.QHBoxLayout:
         # Scale Controller
         # -- Shortcut
-        _shortcut_layout = QtWidgets.QHBoxLayout()
+        shortcut_layout = QtWidgets.QHBoxLayout()
         for i in [0.2, 0.5, 0.8, 1.2, 1.5, 2]:
             btn = QtWidgets.QPushButton(str(i))
-            btn.clicked.connect(lambda checked, k=i: self._set_ctl_scale(k))
-            _shortcut_layout.addWidget(btn)
+            btn.clicked.connect(lambda checked=None, k=i: self._set_ctl_scale(k))
+            shortcut_layout.addWidget(btn)
 
         # -- Custom Scale
-        _line_scale_label = QtWidgets.QLabel("Set Controller Scale to")
+        line_scale_label = QtWidgets.QLabel("Set Controller Scale to")
         self._line_scale = QtWidgets.QLineEdit()
         self._line_scale.setPlaceholderText("1")
 
-        _button_scale_ctl = QtWidgets.QPushButton("Set Controller Scale ")
-        _button_scale_ctl.clicked.connect(self._set_ctl_custom_scale)
+        button_scale_ctl = QtWidgets.QPushButton("Set Controller Scale ")
+        button_scale_ctl.clicked.connect(self._set_ctl_custom_scale)
 
-        _custom_scale_layout = QtWidgets.QHBoxLayout()
-        _custom_scale_layout.addWidget(_line_scale_label)
-        _custom_scale_layout.addWidget(self._line_scale)
-        _custom_scale_layout.addWidget(_button_scale_ctl)
+        custom_scale_layout = QtWidgets.QHBoxLayout()
+        custom_scale_layout.addWidget(line_scale_label)
+        custom_scale_layout.addWidget(self._line_scale)
+        custom_scale_layout.addWidget(button_scale_ctl)
 
-        # Scale Controller Layout
-        _scale_layout = QtWidgets.QVBoxLayout()
-        _scale_layout.addLayout(_shortcut_layout)
-        _scale_layout.addLayout(_custom_scale_layout)
+        # Scale Controller Group
+        scale_layout = QtWidgets.QVBoxLayout()
+        scale_layout.addLayout(shortcut_layout)
+        scale_layout.addLayout(custom_scale_layout)
 
-        _group_scale = QtWidgets.QGroupBox("Scale")
-        _group_scale.setLayout(_scale_layout)
+        group_scale = QtWidgets.QGroupBox("Scale")
+        group_scale.setLayout(scale_layout)
 
-
-        # Pivot Controller Layout
-        _pivot_layout = QtWidgets.QHBoxLayout()
+        # Rotate Controller Group
+        rotate_layout = QtWidgets.QHBoxLayout()
 
         label = QtWidgets.QLabel("On")
-        _pivot_layout.addWidget(label)
+        rotate_layout.addWidget(label)
 
         for axis in ["X", "Y", "Z"]:
             btn = QtWidgets.QPushButton(axis)
-            btn.clicked.connect(lambda checked, k=axis: self._rotate_ctl(k))
-
-            # btn.clicked.connect(lambda k=axis: self._rotate_ctl(k))
-            _pivot_layout.addWidget(btn)
+            btn.clicked.connect(lambda checked=None, k=axis: self._rotate_ctl(k))
+            rotate_layout.addWidget(btn)
 
         label = QtWidgets.QLabel("by")
-        _pivot_layout.addWidget(label)
+        rotate_layout.addWidget(label)
 
         self._line_degrees = QtWidgets.QLineEdit()
         self._line_degrees.setPlaceholderText("90")
-        _pivot_layout.addWidget(self._line_degrees)
+        rotate_layout.addWidget(self._line_degrees)
 
         label = QtWidgets.QLabel("degrees")
-        _pivot_layout.addWidget(label)
+        rotate_layout.addWidget(label)
 
-        _group_pivot = QtWidgets.QGroupBox("Rotate")
-        _group_pivot.setLayout(_pivot_layout)
+        group_rotate = QtWidgets.QGroupBox("Rotate")
+        group_rotate.setLayout(rotate_layout)
 
-        # Main Layout
-        _layout = QtWidgets.QVBoxLayout()
-        _layout.addWidget(header)
-        _layout.addWidget(_separator)
-        _layout.addWidget(_group_create)
-        _layout.addWidget(_separator)
-        _layout.addWidget(_group_scale)
-        _layout.addWidget(_separator)
-        _layout.addWidget(_group_pivot)
+        # Scale Rotate Layout
+        scale_rotate_layout = QtWidgets.QHBoxLayout()
+        scale_rotate_layout.addWidget(group_scale)
+        scale_rotate_layout.addWidget(group_rotate)
+
+        return scale_rotate_layout
+
+    def _build_color_group(self) -> QtWidgets.QGroupBox :
+        # Color Group
+        color_cube_layout = QtWidgets.QGridLayout()
+        color_cube_layout.setSpacing(3)
+        colors_by_row = 12
+        row = 0
+        column = 0
+        for i, (color_name, color) in enumerate(color_dict().items()):
+            btn = QtWidgets.QPushButton()
+            btn.clicked.connect(lambda checked=None, c=color: self._color_ctl(c))
+            color = [str(c) for c in color]
+            btn.setStyleSheet("background-color: rgb(" + ",".join(color) + ");")
+            column = i % colors_by_row
+            row = i // colors_by_row
+            color_cube_layout.addWidget(btn, row, column)
+
+        group_color = QtWidgets.QGroupBox("Color")
+        group_color.setLayout(color_cube_layout)
+
+        return group_color
+
+    def _build_shape_group(self) -> QtWidgets.QGroupBox :
+        # Shape Group
+
+        self.shape_tree = TreeWidget()
+        self.shape_tree.set_placeholder_text("No Custom Shape")
+        self.shape_tree.setSelectionMode(QtCore.QAbstractItemView.SingleSelection)
+        self.shape_tree.set_items(ctl_custom_shapes())
+
+        right_layout = QtWidgets.QVBoxLayout()
+        right_layout.addWidget(self.shape_tree)
+
+        btn_change_shape_custom = QtWidgets.QPushButton("Apply custom shape")
+        btn_change_shape_custom.clicked.connect(self._change_ctl_shape_custom)
+        btn_change_shape_by_selection = QtWidgets.QPushButton("Apply last selected shape")
+        btn_change_shape_by_selection.clicked.connect(self._change_ctl_shape_selected)
+
+        left_layout = QtWidgets.QVBoxLayout()
+        left_layout.addWidget(btn_change_shape_custom)
+        left_layout.addWidget(btn_change_shape_by_selection)
+
+        shape_layout = QtWidgets.QHBoxLayout()
+        shape_layout.addLayout(right_layout)
+        shape_layout.addLayout(left_layout)
 
 
-        self.setLayout(_layout)
+        shape_group = QtWidgets.QGroupBox("Shape")
+        shape_group.setLayout(shape_layout)
 
+        return shape_group
+
+    # Functions
     def _create_ctl(self):
         print(">> Creating Controllers")
-        create_FK_ctl(obj_list=[])
+
+        if self._combobox_parent.currentText() == "no parenting":
+            parent=0
+        elif self._combobox_parent.currentText() == "child":
+            parent = 1
+        elif self._combobox_parent.currentText() == "parent":
+            parent = 2
+        else:
+            parent = 0
+
+        ctl_list = create_ctls(obj_list=[], parent=parent, in_autorig=False)
+
+        if self._box_add_jnt.isChecked():
+            create_jnts(ctl_list)
 
     def _set_ctl_custom_scale(self):
         value = self._line_scale.text()
-        try:
-            value = float(value)
-        except:
-            if value == "":
-                value = 1.0
-            else:
-                print(value, "is not accepted, should be int or float")
-                return
+        scale = float(value) if value != "" else 1.0
+        self._set_ctl_scale(scale)
 
-        self._set_ctl_scale(value)
-
-    def _set_ctl_scale(self, value):
+    def _set_ctl_scale(self, value : float):
         print(">> Setting Controller Scale to", value)
-        set_ctl_scale(ctl_list = [], scale = value)
+        scale_ctls(ctl_list = [], scale = value)
 
     def _rotate_ctl(self, axis):
-        degrees = self._line_degrees.text()
-        try:
-            degrees = int(degrees)
-        except:
-            if degrees == "":
-                degrees = 90
-            else:
-                print(degrees, "is not accpeted, should be int")
-                return
+        value = self._line_degrees.text()
+
+        degrees = int(value) if value != "" else 90
+
+        # print(degrees, "is not accepted, should be int")
 
         print(">> Rotating Controller on", axis, "axis by", degrees, "degrees")
-        rotate_ctl(ctl_list = [], axis = axis, degrees = degrees)
 
-def run():
-    try:
-        in_maya = not cmds.about(batch=True)
-    except:
-        in_maya = False
+        rotate_ctls(ctl_list = [], axis = axis, degrees = degrees)
 
-    try:
-        import qdarktheme
-        qdarktheme.setup_theme()
-    except ImportError:
-        print("Dark Theme was not found")
-
-    if in_maya:
-        ctl_widget = ControllerWidget()
-
-        layout = QtWidgets.QVBoxLayout()
-        layout.addWidget(ctl_widget)
-
-        widget = QtWidgets.QWidget()
-        widget.setLayout(layout)
-        widget.show()
-
-    else:
-        app = QtWidgets.QApplication(sys.argv)
-        app.setStyle("Fusion")
-
-        ctl_widget = ControllerWidget()
-
-        layout = QtWidgets.QVBoxLayout()
-        layout.addWidget(ctl_widget)
-
-        widget = QtWidgets.QWidget()
-        widget.setLayout(layout)
-        widget.show()
-
-        app.exec_()
+    def _color_ctl(self, color):
+        print(">> Change Controller color to", color)
+        color_ctls(ctl_list = [], color = color)
 
 
-if __name__ == '__main__':
-    run()
+    def _change_ctl_shape_custom(self):
+        shape = self.shape_tree.selectedItems()[0]
+        print(">> Change Controller shape to", shape)
+
+    def _change_ctl_shape_selected(self):
+        print(">> Change Controller shape to last selected Controller shape")

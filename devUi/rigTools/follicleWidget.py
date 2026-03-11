@@ -1,8 +1,9 @@
 import sys
-from PySide6 import QtWidgets, QtCore, QtGui
+from Qt import QtWidgets, QtCore, QtGui
 
-from devMaya.utils.api import create_flc_on_surface, create_FK_ctl, create_jnt, create_set
+from devMaya.utils.api import create_flc_on_surface, create_ctls, create_jnts, create_set, select_object
 from devUi.utils.api import *
+from devUi.customWidgets.api import HeaderWidget, Separator
 
 from maya import cmds
 
@@ -10,7 +11,7 @@ class FollicleWidget(QtWidgets.QWidget):
 
     def __init__(self, parent=None):
         super().__init__()
-        
+
         # Surface
         self._line_srf = QtWidgets.QLineEdit()
         self._line_srf.setPlaceholderText("surface name")
@@ -22,10 +23,8 @@ class FollicleWidget(QtWidgets.QWidget):
         self._line_param_u_start = QtWidgets.QLineEdit()
         self._line_param_u_start.setPlaceholderText("0.0")
 
-        
         self._line_param_u_end = QtWidgets.QLineEdit()
         self._line_param_u_end.setPlaceholderText("1.0")
-
 
         self._line_param_u_offset = QtWidgets.QLineEdit()
         self._line_param_u_offset.setPlaceholderText("0.0")
@@ -35,18 +34,14 @@ class FollicleWidget(QtWidgets.QWidget):
         self._line_flc_on_v = QtWidgets.QLineEdit()
         self._line_flc_on_v.setPlaceholderText("1")
 
-
         self._line_param_v_start = QtWidgets.QLineEdit()
         self._line_param_v_start.setPlaceholderText("0.0")
-
 
         self._line_param_v_end = QtWidgets.QLineEdit()
         self._line_param_v_end.setPlaceholderText("1.0")
 
-
         self._line_param_v_offset = QtWidgets.QLineEdit()
         self._line_param_v_offset.setPlaceholderText("0.0")
-
 
         # Parameters
         self._box_switch = QtWidgets.QCheckBox("Switch your u and v settings")
@@ -60,9 +55,6 @@ class FollicleWidget(QtWidgets.QWidget):
         button.clicked.connect(self._create_follicle_on_surface)
         button.setFixedHeight(50)
 
-        # Separator
-        _separator = Separator()
-
         # Form Layout
         layout = QtWidgets.QFormLayout()
         layout.setLabelAlignment(QtCore.Qt.AlignRight)
@@ -72,25 +64,30 @@ class FollicleWidget(QtWidgets.QWidget):
         layout.addRow("Ending at", self._line_param_u_end)
         layout.addRow("With an offset of", self._line_param_u_offset)
 
-        layout.addRow(_separator)
+        layout.addRow(Separator())
 
         layout.addRow("How many follicle on V ?", self._line_flc_on_v)
         layout.addRow("Starting at", self._line_param_v_start)
         layout.addRow("Ending at", self._line_param_v_end)
         layout.addRow("With an offset of", self._line_param_v_offset)
 
-        layout.addRow(_separator)
+        layout.addRow(Separator())
 
         layout.addRow(self._box_switch)
         layout.addRow(self._box_add_controller)
         layout.addRow(self._box_add_joint)
         layout.addRow(self._box_add_set)
 
-        layout.addRow(_separator)
+        layout.addRow(Separator())
 
         layout.addRow(button)
 
-        self.setLayout(layout)
+        # Main Layout
+        main_layout = QtWidgets.QVBoxLayout()
+        main_layout.addWidget(HeaderWidget(title = "Follicle", color = get_color("yellow")))
+        main_layout.addLayout(layout)
+
+        self.setLayout(main_layout)
 
     def _create_follicle_on_surface(self):
         """
@@ -98,18 +95,36 @@ class FollicleWidget(QtWidgets.QWidget):
         """
         print(">> Creating Follicle on Surface")
 
-        surface = self._line_srf.text() or None
+        value = self._line_srf.text()
+        surface = value if value != "" else None
 
-        flc_on_u = int(self._line_flc_on_u.text()) or 1
-        u_start = float(self._line_param_u_start.text()) or 0.0
-        u_end = float(self._line_param_u_end.text()) or 1.0
-        u_offset = float(self._line_param_u_offset.text()) or 0.0
+        # U
+        value = self._line_flc_on_u.text()
+        flc_on_u = int(value) if value != "" else 1
 
-        flc_on_v = int(self._line_flc_on_v.text()) or 1
-        v_start = float(self._line_param_v_start.text()) or 0.0
-        v_end = float(self._line_param_v_end.text()) or 1.0
-        v_offset = float(self._line_param_v_offset.text()) or 0.0
+        value = self._line_param_u_start.text()
+        u_start = float(value) if value != "" else 0.0
 
+        value = self._line_param_u_end.text()
+        u_end = float(value) if value != "" else 1.0
+
+        value = self._line_param_u_offset.text()
+        u_offset = float(value) if value != "" else 0.0
+
+        # V
+        value = self._line_flc_on_v.text()
+        flc_on_v = int(value) if value != "" else 1
+
+        value = self._line_param_v_start.text()
+        v_start = float(value) if value != "" else 0.0
+
+        value = self._line_param_v_end.text()
+        v_end = float(value) if value != "" else 1.0
+
+        value = self._line_param_v_offset.text()
+        v_offset = float(value) if value != "" else 0.0
+
+        # Parameters
         switch = self._box_switch.isChecked()
         add_ctl = self._box_add_controller.isChecked()
         add_jnt = self._box_add_joint.isChecked()
@@ -132,9 +147,9 @@ class FollicleWidget(QtWidgets.QWidget):
             v_offset = switch_u_offset
 
         flc_created = create_flc_on_surface(
-            surface,
-            flc_on_u,
-            flc_on_v,
+            surface = None,
+            flc_on_u = flc_on_u,
+            flc_on_v = flc_on_v,
 
             flc_param_u_start = u_start,
             flc_param_u_end = u_end,
@@ -144,55 +159,13 @@ class FollicleWidget(QtWidgets.QWidget):
             flc_param_v_end = v_end,
             flc_param_v_offset = v_offset
         )
-
         if add_ctl:
-            ctl_created, ctl_grp_created = create_FK_ctl(flc_created, parent = 1)
+            ctl_created = create_ctls(flc_created, parent = 1, in_autorig=False)
             if add_jnt:
-                jnt_created = create_jnt(ctl_created, parent=1)
-
-        if add_jnt and not add_ctl:
-            jnt_created = create_jnt(flc_created, parent = 1)
+                jnt_created = create_jnts(ctl_created, parent=1, in_autorig=False)
+        else:
+            if add_jnt:
+                jnt_created = create_jnts(flc_created, parent = 1, in_autorig=False)
 
         if add_set:
             create_set(flc_created)
-
-
-def run():
-    try:
-        in_maya = not cmds.about(batch=True)
-    except:
-        in_maya = False
-
-    try:
-        import qdarktheme
-        qdarktheme.setup_theme()
-    except ImportError:
-        print("Dark Theme was not found")
-
-    if in_maya:
-        follicle_widget = FollicleWidget()
-
-        layout = QtWidgets.QVBoxLayout()
-        layout.addWidget(follicle_widget)
-
-        widget = QtWidgets.QWidget()
-        widget.setLayout(layout)
-        widget.show()
-
-    else:
-        app = QtWidgets.QApplication(sys.argv)
-        app.setStyle("Fusion")
-
-        follicle_widget = FollicleWidget()
-
-        layout = QtWidgets.QVBoxLayout()
-        layout.addWidget(follicle_widget)
-
-        widget = QtWidgets.QWidget()
-        widget.setLayout(layout)
-        widget.show()
-
-        app.exec_()
-
-if __name__ == '__main__':
-    run()

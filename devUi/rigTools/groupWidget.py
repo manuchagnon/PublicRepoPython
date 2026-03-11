@@ -1,9 +1,10 @@
 import sys
-from PySide6 import QtWidgets, QtCore, QtGui
+from Qt import QtWidgets, QtCore, QtGui
 
 from devUi.utils.api import *
+from devUi.customWidgets.api import HeaderWidget, Separator
 
-from devMaya.utils.api import create_grp
+from devMaya.utils.api import create_grps
 
 from maya import cmds
 
@@ -11,9 +12,6 @@ class GroupWidget(QtWidgets.QWidget):
 
     def __init__(self, parent=None):
         super().__init__()
-
-        # Separator
-        _separator = Separator()
 
         # Suffix
         self._line_suffix = QtWidgets.QLineEdit()
@@ -33,18 +31,23 @@ class GroupWidget(QtWidgets.QWidget):
         self._line_object.setPlaceholderText("None")
         self._line_object.setDisabled(True)
 
-        # Create controller Layout
-        _layout = QtWidgets.QFormLayout()
-        _layout.addWidget(_separator)
-        _layout.setLabelAlignment(QtCore.Qt.AlignRight)
-        _layout.addRow("Group suffix :", self._line_suffix)
-        _layout.addWidget(_separator)
-        _layout.addRow("Group gizmo :", self._combobox_gizmo)
-        _layout.addRow("Gizmo Target Object :", self._line_object)
-        _layout.addWidget(_separator)
-        _layout.addRow(_button_create_grp)
+        # Form Layout
+        layout = QtWidgets.QFormLayout()
+        layout.addWidget(Separator())
+        layout.setLabelAlignment(QtCore.Qt.AlignRight)
+        layout.addRow("Group suffix :", self._line_suffix)
+        layout.addWidget(Separator())
+        layout.addRow("Group gizmo :", self._combobox_gizmo)
+        layout.addRow("Gizmo Target Object :", self._line_object)
+        layout.addWidget(Separator())
+        layout.addRow(_button_create_grp)
 
-        self.setLayout(_layout)
+        # Main Layout
+        main_layout = QtWidgets.QVBoxLayout()
+        main_layout.addWidget(HeaderWidget(title = "Group", color = get_color("red")))
+        main_layout.addLayout(layout)
+
+        self.setLayout(main_layout)
 
     def refresh(self):
         if self._combobox_gizmo.currentText() == "at object":
@@ -65,49 +68,9 @@ class GroupWidget(QtWidgets.QWidget):
         elif gizmo_setting == "at object":
             gizmo = 2
             gizmo_target_obj = self._line_object.text()
+        else:
+            gizmo=0
 
         suffix = self._line_suffix.text()
 
-        create_grp(obj_list=None, guizmo=gizmo, guizmo_target_obj=gizmo_target_obj, suffix = suffix)
-
-
-
-def run():
-    try:
-        in_maya = not cmds.about(batch=True)
-    except:
-        in_maya = False
-
-    try:
-        import qdarktheme
-        qdarktheme.setup_theme()
-    except ImportError:
-        print("Dark Theme was not found")
-
-    if in_maya:
-        group_widget = GroupWidget()
-
-        layout = QtWidgets.QVBoxLayout()
-        layout.addWidget(group_widget)
-
-        widget = QtWidgets.QWidget()
-        widget.setLayout(layout)
-        widget.show()
-
-    else:
-        app = QtWidgets.QApplication(sys.argv)
-        app.setStyle("Fusion")
-
-        group_widget = GroupWidget()
-
-        layout = QtWidgets.QVBoxLayout()
-        layout.addWidget(group_widget)
-
-        widget = QtWidgets.QWidget()
-        widget.setLayout(layout)
-        widget.show()
-
-        app.exec_()
-
-if __name__ == '__main__':
-    run()
+        create_grps(obj_list=[], gizmo_status=gizmo, gizmo_target_obj=gizmo_target_obj, suffix = suffix, in_autorig=False)

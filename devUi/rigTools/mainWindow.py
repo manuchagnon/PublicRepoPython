@@ -1,98 +1,68 @@
 import sys
+from Qt import QtWidgets, QtCore
 
-from maya import cmds
+from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
 
-from PySide6 import QtCore, QtGui, QtWidgets
+from devUi.customWidgets.headerWidget import HeaderWidget
+from devUi.utils.api import get_color
 
-from DevUi.utils.api import *
-
-from headerWidget import HeaderWidget
-
-from controllerWidget import ControllerWidget
-from follicleWidget import FollicleWidget
-from jointWidget import JointWidget
-from groupWidget import GroupWidget
+from .controllerWidget import ControllerWidget
+from .follicleWidget import FollicleWidget
+from .jointWidget import JointWidget
+from .groupWidget import GroupWidget
 
 
-class MainWindow(QtWidgets.QMainWindow):
+class RigWindow(MayaQWidgetDockableMixin, QtWidgets.QWidget):
 
-    _BTN_STYLE = ("QPushButton:hover"
-                  "{"
-                  "background-color:green"
-                  "}")
+    TOOL_NAME = "RigWindow"
+
+    STYLE_SHEET = (
+        """
+        QPushButton:hover {
+        background-color:green
+        }
+        """
+    )
 
     def __init__(self, parent=None):
-        super().__init__()
-
-        # Title
-        _title_label = QtWidgets.QLabel("Rig Tools")
-        _title_label.setAlignment(QtCore.Qt.AlignCenter)
-        # Header
-        _header = HeaderWidget(title = "Rig Tools", color = orange)
-
-        # Controller Widget
-        _controller_widget = ControllerWidget()
+        super().__init__(parent)
 
         # Follicle Widget
-        _follicle_widget = FollicleWidget()
+        follicle_widget = FollicleWidget()
+
+        # Controller Widget
+        controller_widget = ControllerWidget()
 
         # Joint Widget
-        _joint_widget = JointWidget()
+        joint_widget = JointWidget()
 
         # Joint Widget
-        _group_widget = GroupWidget()
+        group_widget = GroupWidget()
 
         # Tab Widget
-        _tabs = QtWidgets.QTabWidget()
-        _tabs.addTab(_controller_widget, "Controller")
-        _tabs.addTab(_follicle_widget, "Follicle")
-        _tabs.addTab(_joint_widget, "Joint")
-        _tabs.addTab(_group_widget, "Group")
+        tabs = QtWidgets.QTabWidget()
+        tabs.addTab(controller_widget, "Controller")
+        tabs.addTab(follicle_widget, "Follicle")
+        tabs.addTab(joint_widget, "Joint")
+        tabs.addTab(group_widget, "Group")
 
         # Infos
-        _infos_label = QtWidgets.QLabel("Emmanuel Chagnon 12/2025")
+        _infos_label = QtWidgets.QLabel("Emmanuel Chagnon 03/2026")
         _infos_label.setAlignment(QtCore.Qt.AlignCenter)
 
         # Main Layout
-        _layout = QtWidgets.QVBoxLayout()
-        _layout.addWidget(_header)
-        _layout.addWidget(_title_label)
-        _layout.addWidget(_tabs)
-        _layout.addWidget(_infos_label)
-
-        # Main Widget
-        _widget = QtWidgets.QWidget()
-        _widget.setLayout(_layout)
-        self.setCentralWidget(_widget)
+        layout = QtWidgets.QVBoxLayout()
+        layout.addWidget(HeaderWidget(title = "Rig Tools", color = get_color("lila")))
+        layout.addWidget(tabs)
+        layout.addWidget(_infos_label)
 
         # Settings
+        self.setLayout(layout)
+        self.setWindowTitle(self.TOOL_NAME)
         self.setMinimumWidth(500)
         self.setMinimumHeight(600)
-        self.setStyleSheet(self._BTN_STYLE)
-
-
-def run():
-    try:
-        in_maya = not cmds.about(batch=True)
-    except:
-        in_maya = False
-
-    try:
-        import qdarktheme
-        qdarktheme.setup_theme()
-    except ImportError:
-        print("Dark Theme was not found")
-
-    if in_maya:
-        window = MainWindow()
-        window.show()
-
-    else:
-        app = QtWidgets.QApplication(sys.argv)
-        window = MainWindow()
-        window.show()
-        app.exec_()
-
+        self.setStyleSheet(self.STYLE_SHEET)
 
 if __name__ == '__main__':
-    run()
+    wid = RigWindow()
+    wid.show()
