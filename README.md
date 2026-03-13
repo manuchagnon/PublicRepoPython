@@ -24,6 +24,7 @@ I know there is room for improvment but i am really motivated to continue learni
   - Unreal Engine
 
 # Check out my media :
+  - Rigging Demo Reel : https://www.artstation.com/artwork/AZzBle
   - Artstation : [https://www.artstation.com/emmanuelchagnon7](https://www.artstation.com/emmanuelchagnon7)
   - Linkedin : [https://www.linkedin.com/in/emmanuel-chagnon-336408264/](https://www.linkedin.com/in/emmanuel-chagnon-336408264/)
   - Mail : [chagnon.emmanuel@gmail.com](mailto:chagnon.emmanuel@gmail.com)
