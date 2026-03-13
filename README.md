@@ -1,5 +1,8 @@
 # Hello, my name is Emmanuel Chagnon, I am a Junior Rigging, TD and Pipeline Artist based in Paris, France.
 
+![](/bannermarch2026.png)
+
+
 **This is my public Git where i share custom python scripts.**
 I use Python in my every day work to automate rigging tasks and develop my own tools. 
 I plan on showing more python script for Blender and Nuke.
@@ -33,5 +36,4 @@ I know there is room for improvment but i am really motivated to continue learni
 **I want to thank my internship supervisors Simon Legrand and Gilles de Saint-Haubert at the Studio Benuts (La Hulpe, Belgium)
 for teaching me OOP programming and how to "python" the good way.**
 
-![](/bannermarch2026.png)
 
