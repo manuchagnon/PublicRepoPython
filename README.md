@@ -33,5 +33,5 @@ I know there is room for improvment but i am really motivated to continue learni
 **I want to thank my internship supervisors Simon Legrand and Gilles de Saint-Haubert at the Studio Benuts (La Hulpe, Belgium)
 for teaching me OOP programming and how to "python" the good way.**
 
-![](https://drive.google.com/file/d/14x-3dTpzlHwY9Rv08dLbEzsyWdwu1Dau/view?usp=drivesdk "bannière septembre 2025")
+![](/bannermarch2026.png)
 
