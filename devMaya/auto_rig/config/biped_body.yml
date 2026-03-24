@@ -1,0 +1,139 @@
+# This is the config file for the auto rig of the normal biped
+# To load before executing the human biped auto rig
+
+# Parameters for all components
+components :
+  ctl :
+    parameter :
+      shape: double arrow
+      color: blue
+
+    IK :
+      shape : box
+      color : red
+
+    IK_pole :
+      shape: sphere
+      color: red
+
+    FK :
+      shape: circle
+      color: green
+
+    bend :
+      shape: round square
+      color: yellow
+
+    tweak :
+      shape: square
+      color: red
+
+  jnt :
+    def :
+      color : None
+
+    IK :
+      color: red
+
+    FK :
+      color: green
+
+    surface :
+      color : blue
+
+    follicle :
+      color : red
+
+# Parameters for all modules
+modules :
+  global :
+    type : GLOBAL
+    parent : None
+    side : []
+
+  cog :
+    type : COG
+    parent : global
+    side : []
+
+  spine :
+    type : SPINE
+    parent : cog
+    side: []
+
+  neck :
+    type : FK_LIMB
+    parent : spine
+    side: []
+
+  head :
+    type : SIMPLE
+    parent : neck
+    side: []
+    parameters:
+      bend : True
+
+  scapula:
+    type : FK_LIMB
+    parent : spine
+    side:
+      - L
+      - R
+
+  arm :
+    type : ARM
+    parent : scapula
+    side :
+      - L
+      - R
+    parameters :
+      pole vector : True
+      bend : True
+      stretch : True
+
+  hand :
+    type : HAND
+    parent : arm
+    side :
+      - L
+      - R
+    parameters :
+      space switch :
+        - global
+        - cog
+        - head
+
+
+  finger :
+    type : IK_FK_LIMB
+    parent : hand
+    side :
+      - L
+      - R
+    parameters :
+      pole vector : True
+      bend : False
+      stretch : False
+
+  leg :
+    type : IK_FK_LIMB
+    parent : cog
+    side :
+      - L
+      - R
+    parameters :
+      pole vector : True
+      bend : True
+      stretch : True
+
+  feet :
+    type : FEET
+    parent : leg
+    side :
+      - L
+      - R
+    parameters :
+      linear roll : True
+
+
+
