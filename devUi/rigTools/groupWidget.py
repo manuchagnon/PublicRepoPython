@@ -4,7 +4,7 @@ from Qt import QtWidgets, QtCore, QtGui
 from devUi.utils.api import *
 from devUi.customWidgets.api import HeaderWidget, Separator
 
-from devMaya.utils.api import create_grps
+from devMaya.utils.api import create_grps, undo_chunk
 
 from maya import cmds
 
@@ -55,6 +55,7 @@ class GroupWidget(QtWidgets.QWidget):
         else:
             self._line_object.setDisabled(True)
 
+    @undo_chunk
     def _create_grp(self):
         gizmo_setting = self._combobox_gizmo.currentText()
         print(">> Create Group with gizmo", gizmo_setting)

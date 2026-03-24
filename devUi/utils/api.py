@@ -1,3 +1,1 @@
-from .separator import Separator
-
-from .colors import get_color
+from .colors import get_color, color_dict

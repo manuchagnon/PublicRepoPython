@@ -1,7 +1,7 @@
 import sys
 from Qt import QtWidgets, QtCore, QtGui
 
-from devMaya.utils.api import create_flc_on_surface, create_ctls, create_jnts, create_set, select_object
+from devMaya.utils.api import create_flc_on_surface, create_ctls, create_jnts, create_set, undo_chunk
 from devUi.utils.api import *
 from devUi.customWidgets.api import HeaderWidget, Separator
 
@@ -89,6 +89,7 @@ class FollicleWidget(QtWidgets.QWidget):
 
         self.setLayout(main_layout)
 
+    @undo_chunk
     def _create_follicle_on_surface(self):
         """
         Call the custom maya function to create the follicle on surface with custom parameters from ui

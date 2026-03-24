@@ -1,7 +1,7 @@
 from Qt import QtWidgets, QtCore, QtGui
 
 from devUi.utils.api import get_color
-from devMaya.utils.api import create_jnts
+from devMaya.utils.api import create_jnts, undo_chunk
 from devUi.customWidgets.headerWidget import HeaderWidget
 
 class JointWidget(QtWidgets.QWidget):
@@ -31,6 +31,7 @@ class JointWidget(QtWidgets.QWidget):
 
         self.setLayout(main_layout)
 
+    @undo_chunk
     def _create_joint_on_selection(self):
         """
         Call the custom maya function to create the joints under selection

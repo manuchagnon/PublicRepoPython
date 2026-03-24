@@ -151,7 +151,7 @@ def skin_joints(joints, skin_cluster=None, obj=None, max_inf=3, weight=0.0, remo
                 cmds.skinCluster( skin_cluster, e=1, mi=max_inf, weight=weight, ps=0, ns=10, lw=True, ri=joint)
         else:
             for joint in joints:
-                cmds.skinCluster( skin_cluster, e=1, addInfluence=joint, mi=max_inf, weight=weight, ps=0, ns=10, lw=True)
+                cmds.skinCluster( skin_cluster, e=1, addInfluence=joint, mi=max_inf, ug=0, weight=weight, ps=0, ns=10, lw=True)
 
     elif obj:
         skin_cluster = get_skin_cluster(obj)
@@ -161,7 +161,7 @@ def skin_joints(joints, skin_cluster=None, obj=None, max_inf=3, weight=0.0, remo
                     cmds.skinCluster( skin_cluster, e=1, mi=max_inf, weight=weight, ps=0, ns=10, lw=True, ri=joint)
             else:
                 for joint in joints:
-                    cmds.skinCluster( skin_cluster, e=1, addInfluence=joint, mi=max_inf, weight=weight, ps=0, ns=10, lw=True)
+                    cmds.skinCluster( skin_cluster, e=1, addInfluence=joint, ug=0, mi=max_inf, weight=weight, ps=0, ns=10, lw=True)
 
         else:
             cmds.skinCluster(joints, obj, mi=max_inf, weight=weight) # create new skin cluster

@@ -3,13 +3,14 @@ from Qt import QtWidgets, QtCore
 
 from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
 
-from devUi.customWidgets.headerWidget import HeaderWidget
+from devUi.customWidgets.api import HeaderWidget
 from devUi.utils.api import get_color
 
 from .controllerWidget import ControllerWidget
 from .follicleWidget import FollicleWidget
 from .jointWidget import JointWidget
 from .groupWidget import GroupWidget
+from devUi.skinTools.mainWindow import SkinWindow
 
 
 class RigWindow(MayaQWidgetDockableMixin, QtWidgets.QWidget):
@@ -27,23 +28,27 @@ class RigWindow(MayaQWidgetDockableMixin, QtWidgets.QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
 
-        # Follicle Widget
+        # Follicle
         follicle_widget = FollicleWidget()
 
-        # Controller Widget
+        # Controller
         controller_widget = ControllerWidget()
 
-        # Joint Widget
+        # Joint
         joint_widget = JointWidget()
 
-        # Joint Widget
+        # Joint
         group_widget = GroupWidget()
+
+        # Skinning
+        skinning_widget = SkinWindow()
 
         # Tab Widget
         tabs = QtWidgets.QTabWidget()
         tabs.addTab(controller_widget, "Controller")
         tabs.addTab(follicle_widget, "Follicle")
         tabs.addTab(joint_widget, "Joint")
+        tabs.addTab(skinning_widget, "Skinning")
         tabs.addTab(group_widget, "Group")
 
         # Infos
@@ -59,8 +64,8 @@ class RigWindow(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         # Settings
         self.setLayout(layout)
         self.setWindowTitle(self.TOOL_NAME)
-        self.setMinimumWidth(500)
-        self.setMinimumHeight(600)
+        self.setMinimumWidth(425)
+        self.setMinimumHeight(700)
         self.setStyleSheet(self.STYLE_SHEET)
 
 if __name__ == '__main__':

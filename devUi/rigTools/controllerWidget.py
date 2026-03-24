@@ -4,7 +4,10 @@ from maya import cmds
 from devUi.utils.api import get_color, color_dict
 from devUi.customWidgets.api import HeaderWidget, TreeWidget
 
-from devMaya.utils.api import create_ctls, scale_ctls, rotate_ctls, create_jnts, color_ctls, ctl_custom_shapes
+from devMaya.utils.api import (create_ctls, scale_ctls, rotate_ctls, create_jnts, color_ctls,
+                               ctl_custom_shapes, change_ctl_shapes, change_ctl_shapes_by_ctl_source, select_all_cvs,
+                               change_ctl_shapes_by_shape_name, undo_chunk
+                               )
 
 class ControllerWidget(QtWidgets.QWidget):
 
@@ -25,6 +28,7 @@ class ControllerWidget(QtWidgets.QWidget):
 
         self.setLayout(layout)
 
+        self.refresh()
     # UI
     def _build_create_group(self) -> QtWidgets.QGroupBox:
         # Create Controller
@@ -52,7 +56,7 @@ class ControllerWidget(QtWidgets.QWidget):
         # Scale Controller
         # -- Shortcut
         shortcut_layout = QtWidgets.QHBoxLayout()
-        for i in [0.2, 0.5, 0.8, 1.2, 1.5, 2]:
+        for i in [-1, 0.2, 0.5, 0.8, 1.2, 1.5, 2]:
             btn = QtWidgets.QPushButton(str(i))
             btn.clicked.connect(lambda checked=None, k=i: self._set_ctl_scale(k))
             shortcut_layout.addWidget(btn)
@@ -62,7 +66,7 @@ class ControllerWidget(QtWidgets.QWidget):
         self._line_scale = QtWidgets.QLineEdit()
         self._line_scale.setPlaceholderText("1")
 
-        button_scale_ctl = QtWidgets.QPushButton("Set Controller Scale ")
+        button_scale_ctl = QtWidgets.QPushButton("Set Scale ")
         button_scale_ctl.clicked.connect(self._set_ctl_custom_scale)
 
         custom_scale_layout = QtWidgets.QHBoxLayout()
@@ -121,6 +125,7 @@ class ControllerWidget(QtWidgets.QWidget):
             btn.clicked.connect(lambda checked=None, c=color: self._color_ctl(c))
             color = [str(c) for c in color]
             btn.setStyleSheet("background-color: rgb(" + ",".join(color) + ");")
+            btn.setToolTip(color_name)
             column = i % colors_by_row
             row = i // colors_by_row
             color_cube_layout.addWidget(btn, row, column)
@@ -135,32 +140,46 @@ class ControllerWidget(QtWidgets.QWidget):
 
         self.shape_tree = TreeWidget()
         self.shape_tree.set_placeholder_text("No Custom Shape")
-        self.shape_tree.setSelectionMode(QtCore.QAbstractItemView.SingleSelection)
-        self.shape_tree.set_items(ctl_custom_shapes())
+        self.shape_tree.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
+        self.shape_tree.setHeaderLabels(["Custom Shapes"])
 
-        right_layout = QtWidgets.QVBoxLayout()
-        right_layout.addWidget(self.shape_tree)
+        left_layout = QtWidgets.QVBoxLayout()
+        left_layout.addWidget(self.shape_tree)
 
         btn_change_shape_custom = QtWidgets.QPushButton("Apply custom shape")
         btn_change_shape_custom.clicked.connect(self._change_ctl_shape_custom)
         btn_change_shape_by_selection = QtWidgets.QPushButton("Apply last selected shape")
         btn_change_shape_by_selection.clicked.connect(self._change_ctl_shape_selected)
+        btn_select_cv = QtWidgets.QPushButton("Select all CVs")
+        btn_select_cv.clicked.connect(self._select_all_cv)
 
-        left_layout = QtWidgets.QVBoxLayout()
-        left_layout.addWidget(btn_change_shape_custom)
-        left_layout.addWidget(btn_change_shape_by_selection)
+        right_layout = QtWidgets.QVBoxLayout()
+        right_layout.addWidget(btn_change_shape_custom)
+        right_layout.addWidget(btn_change_shape_by_selection)
+        right_layout.addWidget(btn_select_cv)
 
         shape_layout = QtWidgets.QHBoxLayout()
-        shape_layout.addLayout(right_layout)
         shape_layout.addLayout(left_layout)
-
+        shape_layout.addLayout(right_layout)
 
         shape_group = QtWidgets.QGroupBox("Shape")
         shape_group.setLayout(shape_layout)
 
         return shape_group
 
+    def refresh(self):
+
+        # fill shape tree
+        for shape, shape_data in ctl_custom_shapes().items():
+            item = QtWidgets.QTreeWidgetItem()
+            item.setText(0, shape)
+
+            item.setData(0, QtCore.Qt.UserRole, (shape_data["cv_pos"], shape_data["degree"], shape_data["periodic"]))
+
+            self.shape_tree.addTopLevelItem(item)
+
     # Functions
+    @undo_chunk
     def _create_ctl(self):
         print(">> Creating Controllers")
 
@@ -176,17 +195,20 @@ class ControllerWidget(QtWidgets.QWidget):
         ctl_list = create_ctls(obj_list=[], parent=parent, in_autorig=False)
 
         if self._box_add_jnt.isChecked():
-            create_jnts(ctl_list)
+            create_jnts(ctl_list, in_autorig=False)
+
 
     def _set_ctl_custom_scale(self):
         value = self._line_scale.text()
         scale = float(value) if value != "" else 1.0
         self._set_ctl_scale(scale)
 
+    @undo_chunk
     def _set_ctl_scale(self, value : float):
         print(">> Setting Controller Scale to", value)
-        scale_ctls(ctl_list = [], scale = value)
+        scale_ctls(ctl_list = [], scale = value, in_autorig=False)
 
+    @undo_chunk
     def _rotate_ctl(self, axis):
         value = self._line_degrees.text()
 
@@ -196,16 +218,35 @@ class ControllerWidget(QtWidgets.QWidget):
 
         print(">> Rotating Controller on", axis, "axis by", degrees, "degrees")
 
-        rotate_ctls(ctl_list = [], axis = axis, degrees = degrees)
+        rotate_ctls(ctl_list = [], axis = axis, degrees = degrees, in_autorig=False)
 
+    @undo_chunk
     def _color_ctl(self, color):
         print(">> Change Controller color to", color)
-        color_ctls(ctl_list = [], color = color)
+        color_ctls(ctl_list = [], color = color, in_autorig=False)
 
 
+    @undo_chunk
     def _change_ctl_shape_custom(self):
-        shape = self.shape_tree.selectedItems()[0]
-        print(">> Change Controller shape to", shape)
+        shape_item = self.shape_tree.selectedItems()[0]
 
+        cv_pos, degree, periodic = shape_item.data(0, QtCore.Qt.UserRole)
+
+        change_ctl_shapes_by_shape_name(ctl_list = [], shape_name = shape_item.text(0), in_autorig=False)
+
+        # change_ctl_shapes(ctl_list=[], cv=cv_pos, degree=degree, periodic=periodic, in_autorig=False)
+
+        print(">> Change Controller shape to", shape_item.text(0))
+
+    @undo_chunk
     def _change_ctl_shape_selected(self):
+
+        change_ctl_shapes_by_ctl_source(ctl_list=[], ctl_source=None)
+
         print(">> Change Controller shape to last selected Controller shape")
+
+    def _select_all_cv(self):
+
+        select_all_cvs(ctl_list=[])
+
+        print(">> Select all selected controllers CVs")

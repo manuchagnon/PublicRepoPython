@@ -4,13 +4,12 @@ import json
 from maya import cmds
 import maya.api.OpenMaya as om
 
+from devMaya.auto_rig.component.controller import Controller
+
+
 """
-Objects :
-CONTROLLER
-
-
 Functions :
-creating controllers
+creating controller
 setting controller scale
 rotating controller cvs
 change controller color
@@ -19,113 +18,6 @@ change controller color
 TO DO:
 changing controller shape
 """
-
-
-class Controller:
-    OBJECT_TYPE = "CONTROLLER"
-
-    def __init__(self, ctl_name: str = None):
-
-        if ctl_name == None:
-            self.ctl_name: str = None
-
-            self.has_zro_grp: bool = False
-            self.zro_grp_name: str = None
-
-            self.radius: float = None
-            self.normal: [int, int, int] = None
-            self.color: tuple[int, int, int] = None
-
-        else:
-            self.build_controller(ctl_name)
-
-    def __repr__(self):
-        return self.ctl_name
-
-    def __str__(self):
-        return self.ctl_name
-    #
-    # def __contains__(self, item : str):
-    #     return item in self.ctl_name
-
-    def build_controller(self, obj: str, zro_grp=True, radius=1, normal=[0, 1, 0], shape="circle"):
-        self.ctl_name = "ctl_" + obj
-
-        self.has_zro_grp = zro_grp
-        self.zro_grp_name = self.ctl_name + "_ZRO_grp"
-
-        self.radius = radius
-        self.normal = normal
-
-        # cv = get_controller_shape(self.shape)
-        # if shape = circle
-        ctl = cmds.circle(name=self.ctl_name, radius=self.radius, normal=self.normal, ch=0)[0]
-        cmds.rename(ctl, self.ctl_name)
-
-        if self.has_zro_grp:
-            ctl_grp = cmds.group(name=self.zro_grp_name)
-
-    def build_controller_from_scene_ctl(self, ctl: str):
-
-        # Filters
-        if not cmds.objExists(ctl):
-            print("Object doesn't exist")
-            return
-
-        shape = ctl + "Shape" if "Shape" not in ctl else ctl
-        if not cmds.objectType(shape, isType="nurbsCurve"):
-            print("Object is not a nurbsCurve")
-            return
-
-        self.ctl_name = ctl
-
-        self.has_zro_grp = cmds.objExists(ctl + "_ZRO_grp")
-        self.zro_grp_name = self.ctl_name + "_ZRO_grp"
-
-        self.radius = 1
-        self.normal = [0, 1, 0]
-
-        # self.color =
-
-    @property
-    def pos(self):
-        return cmds.xform(self.ctl_name, q=True, ws=True, t=True)
-
-    @pos.setter
-    def pos(self, pos: [float, float, float]):
-        cmds.xform(self.ctl_name, q=True, ws=True, t=pos)
-
-    @property
-    def rot(self):
-        cmds.xform(self.ctl_name, q=True, ws=True, ro=True)
-
-    @rot.setter
-    def rot(self, rot: [float, float, float]):
-        cmds.xform(self.ctl_name, q=True, ws=True, ro=rot)
-
-    @property
-    def shapes(self) -> list[str]:
-        return cmds.listRelatives(self.name, children=1, shapes=1)
-
-    @property
-    def degree(self) -> int:
-        return cmds.getAttr(self.shapes[0] + '.degree')
-
-    @property
-    def cvs(self):
-        return [f'{self.ctl_name}.cv[{i}]' for i in range(len(f'{self.ctl_name}.cv'))]
-
-    @property
-    def cvs_pos(self) -> list[tuple[float, float, float]]:
-        cvs = cmds.getAttr(self.shapes[0] + '.cv[*]')
-        cvs_pos = []
-        for c in cvs:
-            cvs_pos.append([
-                float(f"{c[0]}"),
-                float(f"{c[1]}"),
-                float(f"{c[2]}")
-            ])
-        return cvs_pos
 
 def get_ctl(ctl_target: str | Controller):
     if not ctl_target:
@@ -139,22 +31,11 @@ def get_ctl(ctl_target: str | Controller):
         ctl = ctl_target
     else:
         ctl = Controller()
-        ctl.build_controller_from_scene_ctl(ctl_target)
+        ctl.build_from_scene_data(ctl_target)
 
     return ctl
 
-def get_ctl_shapes(ctl: str) -> list[str]:
-    """ Always get ctl shape(s) from provided ctl """
-    if cmds.objectType(ctl) == "transform":
-        shp = cmds.listRelatives(ctl, children=1, shapes=1)
-
-    elif cmds.objectType(ctl) == "nurbsCurve":
-        shp = [ctl]
-    else:
-        return []
-
-    return shp
-
+# -- Create controller
 
 def create_ctl(obj: str, zro_grp=False, parent=0, radius=1, normal=[0, 1, 0]):
     """
@@ -173,9 +54,10 @@ def create_ctl(obj: str, zro_grp=False, parent=0, radius=1, normal=[0, 1, 0]):
         obj_name = str(obj)
 
     ctl = Controller()
-    ctl.build_controller(obj_name, zro_grp, radius, normal)
+    ctl.build(obj_name, zro_grp, radius, normal)
 
-    cmds.matchTransform(ctl.zro_grp_name, obj)
+    cmds.matchTransform(ctl.zro_grp_name, obj, scale=False, rot=False)
+    cmds.xform(ctl.zro_grp_name, s=[1, 1, 1])
 
     if parent == 1:
         cmds.parent(ctl.zro_grp_name, obj)
@@ -185,9 +67,9 @@ def create_ctl(obj: str, zro_grp=False, parent=0, radius=1, normal=[0, 1, 0]):
             if cmds.listRelatives(obj, parent=True, fullPath=1) \
             else None
         if obj_parent:
-            cmds.parent(ctl.ctl_name, obj_parent)
+            cmds.parent(ctl.name, obj_parent)
         cmds.xform(ctl, t=[0, 0, 0], ro=[0, 0, 0])
-        cmds.parent(obj, ctl.ctl_name)
+        cmds.parent(obj, ctl.name)
 
     return ctl
 
@@ -195,10 +77,14 @@ def create_ctls(obj_list: list[str], zro_grp=True, parent=0, radius=1, normal=[0
     """
     Create multiple controllers
     """
+    ctl_list = []
     if obj_list == []:
         obj_list = cmds.ls(sl=1)
+        if obj_list == []:
+            ctl = Controller()
+            ctl.build("new", zro_grp, radius, normal)
+            ctl_list.append(ctl)
 
-    ctl_list = []
 
     for obj in obj_list:
         ctl = create_ctl(obj, zro_grp=zro_grp, parent=parent, radius=radius, normal=normal)
@@ -225,6 +111,7 @@ def create_FK_ctl_chain(obj_list: list[str], zro_grp=True, parent=0, radius=1, n
 
     return ctl_list
 
+# -- Scale controller
 
 def scale_ctl(ctl_target: str | Controller, value: float):
     """
@@ -238,7 +125,7 @@ def scale_ctl(ctl_target: str | Controller, value: float):
 
     return ctl
 
-def scale_ctls(ctl_list: list[str | Controller] = [], scale: float = 1):
+def scale_ctls(ctl_list: list[str | Controller] = [], scale: float = 1, in_autorig=True):
     """
     Scale multiple controllers
     """
@@ -248,15 +135,21 @@ def scale_ctls(ctl_list: list[str | Controller] = [], scale: float = 1):
     for ctl in ctl_list:
         scale_ctl(ctl, scale)
 
+    if not in_autorig:
+        cmds.select(ctl_list)
+
+# -- Rotate controller
 
 def rotate_ctl(ctl_target: str | Controller, axis: str, degrees: int):
     """
     Rotate a controller by accessing its cvs
     """
-
-    ctl = get_ctl(ctl_target)
-    if not ctl:
-        return None
+    if isinstance(ctl_target, str):
+        ctl = get_ctl(ctl_target)
+        if not ctl:
+            return None
+    else:
+        ctl = ctl_target
 
     if axis == "X":
         cmds.rotate(degrees, 0, 0, ctl.cvs, a=1, os=1)
@@ -267,7 +160,7 @@ def rotate_ctl(ctl_target: str | Controller, axis: str, degrees: int):
 
     return ctl_target
 
-def rotate_ctls(ctl_list: list[str | Controller] = [], axis: str = "X", degrees: int = 90):
+def rotate_ctls(ctl_list: list[str | Controller] = [], axis: str = "X", degrees: int = 90, in_autorig=True):
     """
     Rotate multiple controllers
     """
@@ -277,31 +170,23 @@ def rotate_ctls(ctl_list: list[str | Controller] = [], axis: str = "X", degrees:
     for ctl in ctl_list:
         rotate_ctl(ctl_target=ctl, axis=axis, degrees=degrees)
 
+    if not in_autorig:
+        cmds.select(ctl_list)
+
+# -- Color controller
 
 def color_ctl(ctl_target : str, color: tuple[int, int, int]):
     """
     Change color for given Controller
     """
+
     ctl = get_ctl(ctl_target)
     if not ctl:
         return None
 
-    shp = get_ctl_shapes(ctl)[0]
-    if not shp:
-        return None
+    ctl.color = color
 
-    cmds.setAttr(f"{shp}.overrideEnabled", 1)
-
-    def remap_value(x, old_start, old_end, new_start, new_end):
-        return new_start + ((x - old_start) / (old_end - old_start)) * (new_end - new_start)
-
-    color = [remap_value(c, 0, 255, 0, 1) if c > 1 else c for c in color ]
-
-    for i, channel in enumerate(["R", "G", "B"]):
-        cmds.setAttr(f"{shp}.overrideColor{channel}", color[i])
-
-
-def color_ctls(ctl_list : list[str | Controller], color: tuple[int, int, int]):
+def color_ctls(ctl_list : list[str | Controller], color: tuple[int, int, int], in_autorig=True):
 
     if ctl_list == []:
         ctl_list = cmds.ls(sl=1)
@@ -309,40 +194,82 @@ def color_ctls(ctl_list : list[str | Controller], color: tuple[int, int, int]):
     for ctl in ctl_list:
         color_ctl(ctl_target=ctl, color=color)
 
+    if not in_autorig:
+        cmds.select(ctl_list)
 
+# -- Shapes controller
 
+def get_ctl_shapes(ctl: str) -> list[str]:
+    """ Always get ctl shape(s) from provided ctl """
+    if cmds.objectType(ctl) == "transform":
+        shp = cmds.listRelatives(ctl, children=1, shapes=1)
 
+    elif cmds.objectType(ctl) == "nurbsCurve":
+        shp = [ctl]
+    else:
+        return []
 
-def change_ctl_shape(ctl_target: str, cv: list[tuple[float, float, float]], degree=3):
+    return shp
+
+def change_ctl_shape(ctl_target: str, cv: list[tuple[float, float, float]] | str, degree=3, periodic=0):
     ctl = get_ctl(ctl_target)
 
-    shp_target_name = get_ctl_shapes(ctl)[0]
-    shp_target_new_name = shp_target_name + "OLD"  # modify its name before giving old one to the new shape
+    if isinstance(cv, str) and cv == "circle":
+        crv = cmds.circle(r=1, normal=[0, 1, 0], ch=0)[0]
+    else:
+        crv = cmds.curve(p=cv, degree=degree, periodic=periodic)
+    cmds.rename(crv, "ctl_temp")
+    crv = "ctl_temp"
+    cmds.rename(get_ctl_shapes(crv)[0], "ctl_tempShape")
+    new_ctl = get_ctl(crv)
+
+    shp_target_name = ctl.shape
+    shp_target_new_name = ctl.name + "OLD"  # modify its name before giving old one to the new shape
     cmds.rename(shp_target_name, shp_target_new_name)
+    cmds.rename(new_ctl.shape, shp_target_name)
 
-    ctl_s = cmds.duplicate(ctl_source)[0]
+    cmds.parent(new_ctl.shape, ctl, r=1, s=1)  # parent the source shape to the target transform
 
-    shp = get_ctl_shapes(ctl_s)[0]
-
-    cmds.rename(shp, shp_target_name)
-    shp = shp_target_name
-
-    cmds.parent(shp, ctl, r=1, s=1)  # parent the source shape to the target transform
-
+    cmds.delete(crv)
     cmds.delete(shp_target_new_name)  # remove old shape
 
-def change_ctl_shapes(ctl_list: list[str], cv: list[tuple[float, float, float]], degree = 3):
+def change_ctl_shapes(ctl_list: list[str], cv: list[tuple[float, float, float]], degree = 3, periodic=0, in_autorig=True):
     """
     Replace shape for provided ctl with new custom shape
     ctl: nurbsCurve or transform
     """
-    for ctl in ctl_list:
-        change_ctl_shape(ctl, cv = cv, degree = degree)
+    if ctl_list == []:
+        ctl_list = cmds.ls(sl=1)
 
-def change_ctl_shape_by_ctl_source(ctl_list: list[str], ctl_source: str = None):
+    for ctl in ctl_list:
+        change_ctl_shape(ctl, cv = cv, degree = degree, periodic=periodic)
+
+    if not in_autorig:
+        cmds.select(ctl_list)
+
+def change_ctl_shapes_by_shape_name(ctl_list: list[str], shape_name: str, in_autorig=True):
+    if ctl_list == []:
+        ctl_list = cmds.ls(sl=1)
+
+    shapes = ctl_custom_shapes()
+
+    if shape_name not in shapes:
+        return
+
+    for ctl in ctl_list:
+        ctl = Controller(ctl)
+        ctl.shape = shape_name
+
+    if not in_autorig:
+        cmds.select(ctl_list)
+
+def change_ctl_shapes_by_ctl_source(ctl_list: list[str], ctl_source: str = None, in_autorig=False):
     """
     Replace shape of provided controllers with shape of the last selected controller
     """
+    if ctl_list == []:
+        ctl_list = cmds.ls(sl=1)
+
     if not ctl_source:
         ctl_source = ctl_list.pop(-1)
 
@@ -350,6 +277,9 @@ def change_ctl_shape_by_ctl_source(ctl_list: list[str], ctl_source: str = None):
 
     for ctl in ctl_list:
         change_ctl_shape(ctl, cv = ctl_src.cvs_pos, degree = ctl_src.degree)
+
+    if not in_autorig:
+        cmds.select(ctl_list[:-2])
 
 def ctl_custom_shapes() -> dict:
     base_dir = os.path.dirname(os.path.abspath(__file__))
@@ -360,27 +290,18 @@ def ctl_custom_shapes() -> dict:
 
     return shapes
 
-def change_ctl_shape_by_name(ctl_list: list[str], ctl_source: str = None):
-    """
-    Replace shape of provided controllers with shape from stored shapes in json
-    """
-    ctl = get_ctl(ctl_source)
-
-    shapes = ctl_custom_shapes()
-
-    try:
-        cvs_pos = shapes.get(ctl_source)["cvs_pos"]
-        degree = shapes.get(ctl_source)["degree"]
-    except KeyError as e:
-        print("Couldn't find custom controller shape called", ctl_source,":", e)
-        return
-
-    change_ctl_shapes(ctl_list, cv=cvs_pos, degree=degree)
-
-
-
-
 # replaced by property inside object controller
+def select_all_cvs(ctl_list: list[str] = []):
+    if ctl_list == []:
+        ctl_list = cmds.ls(sl=1)
+
+    cvs_selected = [get_ctl(ctl).cvs for ctl in ctl_list]
+
+    for ctl in ctl_list:
+        print(get_ctl(ctl).cvs)
+
+    cmds.select(*cvs_selected)
+
 def get_ctl_cvs_pos(ctl: str | Controller = None) -> list[tuple[float, float, float]]:
     """
     Get cv data from a controller in order to store and rebuild it later
