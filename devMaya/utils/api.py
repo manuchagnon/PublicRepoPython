@@ -26,7 +26,11 @@ from .controller import (
     change_ctl_shapes,
     change_ctl_shapes_by_shape_name,
     change_ctl_shapes_by_ctl_source,
+    change_ctl_line_widths,
     select_all_cvs,
+
+    get_ctl_shapes,
+
 
 )
 
@@ -40,8 +44,9 @@ from .group import (
 )
 
 from .hierarchy import (
-    get_hierarchy_from_root_node,
-    get_children_from_root_node
+    get_hierarchy_list_from_root_node,
+    get_children_from_root_node,
+    get_hierarchy_dict_from_root_node,
 )
 
 from .ik_solver import (
@@ -51,6 +56,8 @@ from .ik_solver import (
 from .joint import (
     create_jnt,
     create_jnts,
+    create_jnt_chain,
+    create_jnt_chain_on_crv,
 
     skin_joints,
     unskin_joints,
@@ -61,6 +68,17 @@ from .joint import (
 
 from .name import (
     replace_in_names,
+    add_to_names,
+    rename_and_increment,
+)
+
+from .nurbs_curve import (
+    get_parameter_u_with_pos,
+    get_pos_with_parameter_u,
+    constraint_obj_to_crv,
+    constraint_lct_to_crv_with_parameter_u,
+    distribute_lct_on_crv,
+    create_crv_with_vtx,
 )
 
 from .selection import (

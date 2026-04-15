@@ -290,6 +290,28 @@ def ctl_custom_shapes() -> dict:
 
     return shapes
 
+def change_ctl_line_width(ctl_target, width=-1):
+    ctl = get_ctl(ctl_target)
+    if not ctl:
+        return None
+
+    ctl.line_width = width
+
+def change_ctl_line_widths(ctl_list=[], width=-1, in_autorig=True):
+    """
+    Change the line width of multiple controllers
+    """
+    if ctl_list == []:
+        ctl_list = cmds.ls(sl=1)
+
+    for ctl in ctl_list:
+        change_ctl_line_width(ctl, width = width)
+
+    if not in_autorig:
+        cmds.select(ctl_list)
+
+
+
 # replaced by property inside object controller
 def select_all_cvs(ctl_list: list[str] = []):
     if ctl_list == []:

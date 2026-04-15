@@ -1,6 +1,9 @@
 from maya import cmds
 import maya.api.OpenMaya as om
 
+from devMaya.utils.controller import get_ctl_shapes
+from devMaya.utils.nurbs_curve import distribute_lct_on_crv
+
 """
 Functions that deals with :
 creating joints
@@ -33,11 +36,16 @@ def create_jnt(obj : str, parent = 1, suffix=""):
     jnt = cmds.joint(n=f'jnt_{obj_name}{suffix}')
     cmds.select(clear=1)
 
-    if parent == 1:
+    if parent == 0:
+        cmds.matchTransform(jnt, obj)
+        cmds.makeIdentity(jnt, apply=1, t=1, r=1, s=1)
+
+    elif parent == 1:
         cmds.parent(jnt, obj)
         cmds.xform(jnt, t=[0, 0, 0], ro=[0, 0, 0])
+        cmds.makeIdentity(jnt, apply=1, t=1, r=1, s=1)
 
-    if parent == 2:
+    elif parent == 2:
         obj_parent = cmds.listRelatives(obj, parent=True, fullPath=1)[0]
         cmds.parent(jnt, obj_parent)
         cmds.xform(jnt, t=[0, 0, 0], ro=[0, 0, 0])
@@ -62,6 +70,41 @@ def create_jnts(obj_list = [], parent = 1, suffix="", in_autorig=True) -> list[s
         cmds.select(jnt_created)
 
     return jnt_created
+
+def create_jnt_chain(obj_list = [], suffix="", orient_joint="xyz", secondary_axis="yup", in_autorig=True) -> list[str]:
+    """
+    Create a joint chain
+    """
+    if obj_list == []: # if no list is provided, use the selected objects ([] if no selection)
+        obj_list = cmds.ls(sl=1)
+
+    jnt_created = []
+
+    for i, obj in enumerate(obj_list):
+        jnt = create_jnt(obj, parent=0, suffix=suffix)
+        jnt_created.append(jnt)
+
+        if i > 0:
+            cmds.parent(jnt, jnt_created[i-1])
+
+    cmds.joint(jnt_created[0], e=1, oj=orient_joint, secondaryAxisOrient=secondary_axis, ch=1, zso=1)
+    cmds.joint(jnt_created[-1], e=1, oj="none", ch=1, zso=1)
+
+    if not in_autorig:
+        cmds.select(jnt_created)
+
+    return jnt_created
+
+def create_jnt_chain_on_crv(crv: str=None, jnt_amount: int = 5, suffix="", orient_joint="xyz", secondary_axis="yup", in_autorig=True):
+    if not crv:
+        crv = cmds.ls(sl=1)[0]
+    shape = get_ctl_shapes(crv)
+    if not shape:
+        return
+
+    lcts = distribute_lct_on_crv(crv=crv, inst_number=jnt_amount, constrained=False)
+    create_jnt_chain(obj_list=lcts, suffix=suffix, orient_joint=orient_joint, secondary_axis=secondary_axis, in_autorig=in_autorig)
+    cmds.delete(lcts)
 
 def get_skin_cluster(obj=None):
     if not obj:
@@ -167,3 +210,5 @@ def skin_joints(joints, skin_cluster=None, obj=None, max_inf=3, weight=0.0, remo
             cmds.skinCluster(joints, obj, mi=max_inf, weight=weight) # create new skin cluster
 
     return True
+
+

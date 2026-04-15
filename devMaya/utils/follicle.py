@@ -1,13 +1,14 @@
 from maya import cmds
 import maya.api.OpenMaya as om
 
+from devUtils.maths import remap_value
+
 """
 Functions that deals with :
 creating follicle on surface
 """
 
-def remap_value(x, old_start, old_end, new_start, new_end):
-    return new_start + ((x - old_start) / (old_end - old_start)) * (new_end - new_start)
+
 
 def create_flc_on_surface(
         surface : str = None,

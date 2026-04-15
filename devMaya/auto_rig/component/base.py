@@ -8,6 +8,10 @@ class ComponentType(Enum):
     SIMPLE = auto()
     CONTROLLER = auto()
     RIBBON = auto()
+    LIMB = auto()
+    FK_LIMB = auto()
+    IK_LIMB = auto()
+    IK_FK_LIMB = auto()
 
 class BaseComponent:
 
@@ -30,7 +34,7 @@ class BaseComponent:
             for suffix in self.SIDE_SUFFIXES:
                 if suffix in name:
                     side = suffix
-                    name, side = name.rsplit(side, 1)
+                    name = name.rsplit(suffix, 1)[0]
             self._name = name
             self._side = side
 

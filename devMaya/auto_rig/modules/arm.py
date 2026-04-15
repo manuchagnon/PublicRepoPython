@@ -1,12 +1,13 @@
 from maya import cmds
 
 from base import ModuleType
-from ik_fk_limb import IkLimb, FkLimb
+from ik_fk_limb import IkFkLimb
 
-class Arm(IkLimb, FkLimb):
+class Arm(IkFkLimb):
 
-    COMPONENT_TYPE = ModuleType.ARM
+    TYPE = ModuleType.ARM
+    CTL_COLOR = "blue"
+    CTL_SHAPE = "double arrow"
 
     def __init__(self):
-        IkLimb.__init__(self)
-        FkLimb.__init__(self)
+        super().__init__(self)

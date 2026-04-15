@@ -10,6 +10,7 @@ from .controllerWidget import ControllerWidget
 from .follicleWidget import FollicleWidget
 from .jointWidget import JointWidget
 from .groupWidget import GroupWidget
+from .nameWidget import NameWidget
 from devUi.skinTools.mainWindow import SkinWindow
 
 
@@ -43,16 +44,20 @@ class RigWindow(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         # Skinning
         skinning_widget = SkinWindow()
 
+        # Rename
+        rename_widget = NameWidget()
+
         # Tab Widget
         tabs = QtWidgets.QTabWidget()
         tabs.addTab(controller_widget, "Controller")
         tabs.addTab(follicle_widget, "Follicle")
         tabs.addTab(joint_widget, "Joint")
-        tabs.addTab(skinning_widget, "Skinning")
+        tabs.addTab(rename_widget, "Name")
         tabs.addTab(group_widget, "Group")
+        tabs.addTab(skinning_widget, "Skinning")
 
         # Infos
-        _infos_label = QtWidgets.QLabel("Emmanuel Chagnon 03/2026")
+        _infos_label = QtWidgets.QLabel("Emmanuel Chagnon 03/2026\nchagnon.emmanuel@gmail.com")
         _infos_label.setAlignment(QtCore.Qt.AlignCenter)
 
         # Main Layout

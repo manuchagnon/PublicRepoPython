@@ -6,7 +6,8 @@ from devUi.customWidgets.api import HeaderWidget, TreeWidget
 
 from devMaya.utils.api import (create_ctls, scale_ctls, rotate_ctls, create_jnts, color_ctls,
                                ctl_custom_shapes, change_ctl_shapes, change_ctl_shapes_by_ctl_source, select_all_cvs,
-                               change_ctl_shapes_by_shape_name, undo_chunk
+                               change_ctl_shapes_by_shape_name, change_ctl_line_widths,
+                               undo_chunk
                                )
 
 class ControllerWidget(QtWidgets.QWidget):
@@ -153,13 +154,26 @@ class ControllerWidget(QtWidgets.QWidget):
         btn_select_cv = QtWidgets.QPushButton("Select all CVs")
         btn_select_cv.clicked.connect(self._select_all_cv)
 
+        center_layout = QtWidgets.QVBoxLayout()
+        center_layout.addWidget(btn_change_shape_custom)
+        center_layout.addWidget(btn_change_shape_by_selection)
+        center_layout.addWidget(btn_select_cv)
+
+        lay = QtWidgets.QHBoxLayout()
+        for i in [1, 2, 4, 8, 12]:
+            btn = QtWidgets.QPushButton(str(i))
+            btn.clicked.connect(lambda checked=None, k=i: self._set_ctl_line_width(k))
+            lay.addWidget(btn)
+
         right_layout = QtWidgets.QVBoxLayout()
-        right_layout.addWidget(btn_change_shape_custom)
-        right_layout.addWidget(btn_change_shape_by_selection)
-        right_layout.addWidget(btn_select_cv)
+        right_layout.addWidget(QtWidgets.QLabel("Set shape line width"))
+        right_layout.addLayout(lay)
+        right_layout.addStretch()
+
 
         shape_layout = QtWidgets.QHBoxLayout()
         shape_layout.addLayout(left_layout)
+        shape_layout.addLayout(center_layout)
         shape_layout.addLayout(right_layout)
 
         shape_group = QtWidgets.QGroupBox("Shape")
@@ -245,6 +259,15 @@ class ControllerWidget(QtWidgets.QWidget):
 
         print(">> Change Controller shape to last selected Controller shape")
 
+    @undo_chunk
+    def _set_ctl_line_width(self, width):
+
+        change_ctl_line_widths(ctl_list=[], width=width, in_autorig=False)
+
+        print(">> Change Controller shape line width to", width)
+
+
+    @undo_chunk
     def _select_all_cv(self):
 
         select_all_cvs(ctl_list=[])

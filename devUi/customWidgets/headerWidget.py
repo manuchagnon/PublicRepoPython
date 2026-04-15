@@ -32,6 +32,9 @@ class HeaderWidget(QtWidgets.QWidget):
         layout.addSpacing(5)
         self.setLayout(layout)
 
+        # Parameters
+        self.setMaximumHeight(100)
+
 if __name__ == '__main__':
     from devMaya.tool_launcher import launch_maya_tool
     launch_maya_tool(HeaderWidget)
