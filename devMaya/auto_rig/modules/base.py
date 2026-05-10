@@ -13,13 +13,15 @@ class ModuleType(Enum):
     FK_LIMB = auto()
     IK_FK_LIMB = auto()
 
-    GLOBAL = auto()
+    ROOT = auto()
     COG = auto()
     SPINE = auto()
     ARM = auto()
     HAND = auto()
     FEET = auto()
     EYE = auto()
+
+    SIMPLE = auto()
 
 class BaseModule(BaseComponent):
 
@@ -78,12 +80,12 @@ class BaseModule(BaseComponent):
 
     @property
     def input(self):
-        # locator at the start of the module
+        """The locator at the start of the module"""
         return self.LOCATOR_PREFIX + self.name + self.INPUT_SUFFIX
 
     @property
     def output(self):
-        # locator at the end of the module
+        """The locator at the end of the module"""
         return self.LOCATOR_PREFIX + self.name + self.OUTPUT_SUFFIX
 
     @property

@@ -298,14 +298,16 @@ class Controller(BaseComponent):
         else:
             return []
 
-    def add_offset_grp(self, gizmo_status = 0, gizmo_target_obj: str | None = None, suffix: str | None=None):
+    def add_offset_grp(self, gizmo_status = 0, gizmo_target_obj: str | None = None, suffix: str | None=None)-> str :
         """
-        Add an offset group between this controller and its ZRO_grp
+        Add an offset group between this controller and its ZRO_grp, right above this controller
         Useful for copy rotation constraints
         """
         if not suffix:
             suffix = "offset" + str(len(self.offset_grp_list) + 1)
-        create_grp(self.name, gizmo_status = gizmo_status, gizmo_target_obj = gizmo_target_obj, suffix = suffix)
+        new_grp = create_grp(self.name, gizmo_status = gizmo_status, gizmo_target_obj = gizmo_target_obj, suffix = suffix)
+
+        return new_grp
 
     #endregion
 

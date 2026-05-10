@@ -53,9 +53,9 @@ def find_closest_vertex_to_point(obj_name, point=(0, 0, 0)):
 
                 vertex_iter.next() # Next iteration for the while loop
 
-            return closest_vertex, min_distance
+            return closest_vertex, closest_vertex_position
         else:
-            print(f'{obj} is not a mesh')
+            print(f'{obj_name} is not a mesh')
             return None
 
     except RuntimeError as e:
@@ -107,9 +107,9 @@ def find_furthest_vertex_to_point(obj_name, point=(0, 0, 0)):
 
                 vertex_iter.next() # Next iteration for the while loop
 
-            return furthest_vertex, max_distance
+            return furthest_vertex, furthest_vertex_position
         else:
-            print(f'{obj} is not a mesh')
+            print(f'{obj_name} is not a mesh')
             return None
 
     except RuntimeError as e:

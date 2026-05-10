@@ -7,7 +7,7 @@ creating groups
 """
 
 
-def create_grp(obj : str, gizmo_status = 0, gizmo_target_obj = None, suffix = ""):
+def create_grp(obj : str, gizmo_status = 0, gizmo_target_obj = None, suffix = "") -> str:
     """
     Create groups on selected objects
 

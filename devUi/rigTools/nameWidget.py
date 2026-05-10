@@ -52,7 +52,7 @@ class NameWidget(QtWidgets.QWidget):
         layout.addRow("Prefix :", self._add_prefix_line)
         layout.addRow("", self._add_prefix_btn)
 
-        layout.addRow("Prefix :", self._add_suffix_line)
+        layout.addRow("Suffix :", self._add_suffix_line)
         layout.addRow("", self._add_suffix_btn)
 
         layout.addRow("Rename :", self._rename_line)

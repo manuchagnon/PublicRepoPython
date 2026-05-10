@@ -18,32 +18,32 @@ class LeftSide(RigParameters):
 
 class FeatherRig(LeftSide):
 
-    def __init__(self, feather_mesh, jnt_main=None, jnt_amount=4, main_locator="locator1"):
+    def __init__(self, feather_meshes, jnt_main=None, jnt_amount=4, main_locator="locator1"):
         super().__init__()
 
         self._jnt_main = jnt_main
         self._jnt_amount = jnt_amount
         self._jnt_list = []
         self._main_locator = main_locator
-        self._feather_mesh = feather_mesh
+        self._feather_meshes = feather_meshes
 
-    def create_feather_rig(self):
-        if not self._feather_mesh:
+    def create_feather_rig(self, feather_mesh):
+        if not feather_mesh:
             print("No mesh selected")
             return None
 
-        closest_index, closest_pos = find_closest_vertex_to_point(self._feather_mesh,cmds.xform(self._main_locator, ws=1, q=1, t=1))
+        closest_index, closest_pos = find_closest_vertex_to_point(feather_mesh, cmds.xform(self._main_locator, ws=1, q=1, t=1))
 
-        furthest_index, furthest_pos = find_furthest_vertex_to_point(self._feather_mesh,cmds.xform(self._main_locator, ws=1, q=1, t=1))
+        furthest_index, furthest_pos = find_furthest_vertex_to_point(feather_mesh, cmds.xform(self._main_locator, ws=1, q=1, t=1))
 
         cmds.select(clear=1)
-        jnt_root = cmds.joint(name=f'jnt_{self._feather_mesh}00_{self._SUFFIX}')
-        pos = cmds.xform(f'{self._feather_mesh}.vtx[{closest_index}]', q=1, ws=1, t=1)
+        jnt_root = cmds.joint(name=f'jnt_{feather_mesh}00_{self._SUFFIX}')
+        pos = cmds.xform(f'{feather_mesh}.vtx[{closest_index}]', q=1, ws=1, t=1)
         cmds.xform(jnt_root, ws=1, t=pos)
 
         cmds.select(clear=1)
-        jnt_end = cmds.joint(name=f'jnt_{self._feather_mesh}01_{self._SUFFIX}')
-        pos = cmds.xform(f'{self._feather_mesh}.vtx[{furthest_index}]', q=1, ws=1, t=1)
+        jnt_end = cmds.joint(name=f'jnt_{feather_mesh}01_{self._SUFFIX}')
+        pos = cmds.xform(f'{feather_mesh}.vtx[{furthest_index}]', q=1, ws=1, t=1)
         cmds.xform(jnt_end, ws=1, t=pos)
         cmds.parent(jnt_end, jnt_root)
 
@@ -53,7 +53,9 @@ class FeatherRig(LeftSide):
         self._jnt_list.append(jnt_root)
         self._jnt_list.append(jnt_end)
 
-        return jnt_root
+        return furthest_pos
+
+
 
     def create_controllers(self):
         self._controllers = create_FK_ctl(self._jnt_list, message = self._feather_mesh, parented=True)

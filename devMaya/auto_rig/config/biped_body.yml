@@ -46,14 +46,14 @@ components :
 
 # Parameters for all modules
 modules :
-  global :
-    type : GLOBAL
+  root :
+    type : ROOT
     parent : None
     side : []
 
   cog :
     type : COG
-    parent : global
+    parent : root
     side : []
 
   spine :
@@ -99,7 +99,7 @@ modules :
       - R
     parameters :
       space switch :
-        - global
+        - root
         - cog
         - head
 

@@ -26,8 +26,11 @@ class Limb(BaseComponent):
         self._ctl_chain = []
         self.jnt_grp = None
         self._scale = scale
+
         self.has_offset_jnt = False
         self._offset_jnt_chain = []
+
+        self._is_bendy = False
 
         if not duplicate_jnt:
             self._jnt_chain = jnt_list
@@ -71,6 +74,14 @@ class Limb(BaseComponent):
         return jnt_created
 
     def build_offset_controller(self):
+        """
+        Create a new controller with a joint inside under every controller of the limb,
+        In order to have full control of the limb
+        Doesn't work if the limb is bendy
+        """
+        if self._is_bendy:
+            return
+
         self._offset_jnt_chain = []
 
         for jnt in self.jnts:
@@ -88,10 +99,23 @@ class Limb(BaseComponent):
             cmds.matchTransform(ctl.name, jnt)
             cmds.parent(ctl.zro_grp_name, jnt)
 
-
-
         self.has_offset_jnt = True
 
+    def add_offset_grp_on_ctl(self, gizmo_status = 0, gizmo_target_obj: str | None = None, suffix: str | None = None) -> list[str] :
+        """
+        Create offset groups on every controller of the limb, useful for adding other layer of mechanism
+        """
+        new_offset_grps = [ctl.add_offset_grp(gizmo_status, gizmo_target_obj, suffix) for ctl in self.ctls]
+        return new_offset_grps
+
+    def build_bendy(self):
+        """
+        TO DO:
+        Create bendy mechanism on this limb with a ribbon component
+        """
+        self._is_bendy = True
+
+        return
 
     @property
     def jnts(self):
