@@ -6,6 +6,7 @@ import maya.api.OpenMaya as om
 
 from devMaya.auto_rig.component.base import BaseComponent, ComponentType
 from devMaya.utils.group import create_grp
+from devMaya.utils.name import determine_base_name
 from devUi.utils.api import get_color
 from devUtils.maths import remap_value
 
@@ -43,6 +44,8 @@ class Controller(BaseComponent):
 
     CONTROLLER_PREFIX = "ctl_"
     ZRO_GROUP_SUFFIX = "_ZRO_grp"
+    NORMAL = [0, 1, 0]
+    SUFFIX = ""
 
     def __init__(self, name: str = None):
 
@@ -65,15 +68,11 @@ class Controller(BaseComponent):
 
     #region -- Builder
 
-    def build(self, name: str, zro_grp=True, radius=1, normal=[0, 1, 0], shape="circle"):
-        if self.CONTROLLER_PREFIX in name:
-            name_without_prefix = name.split(self.CONTROLLER_PREFIX, 1)[-1]
-            self._name = name_without_prefix if name_without_prefix else ""
-        else:
-            self._name = name
+    def build(self, name: str, zro_grp=True, radius=1, normal=None, shape="circle"):
+        self._name = determine_base_name(name, prefix=self.CONTROLLER_PREFIX, side_suffixes = self.SIDE_SUFFIXES)
 
         self.radius = radius
-        self.normal = normal
+        self.normal = normal if normal else self.NORMAL
         self._offset_grp_list = []
 
         ctl = cmds.circle(name=self.name, radius=self.radius, normal=self.normal, ch=0)[0]
@@ -193,7 +192,7 @@ class Controller(BaseComponent):
 
     @property
     def cvs(self):
-        return [f"{self.name}.cv[{i}]" for i in range(100) if cmds.objExists(f"{self.name}.cv[{i}]")]
+        return [f"{self.name}.cv[{i}]" for i in range(70) if cmds.objExists(f"{self.name}.cv[{i}]")]
 
     @property
     def cvs_pos(self) -> list[tuple[float, float, float]]:
@@ -219,7 +218,7 @@ class Controller(BaseComponent):
 
     @property
     def shape_rot(self) -> tuple[float, float, float]:
-        return (0, 0, 0)
+        return (0.0, 0.0, 0.0)
 
     @shape_rot.setter
     def shape_rot(self, rot: tuple[float, float, float]):
@@ -230,8 +229,19 @@ class Controller(BaseComponent):
         return (0, 0, 0)
 
     @shape_scale.setter
-    def shape_scale(self, scale: float):
-        cmds.scale(scale, scale, scale, self.cvs, a=1, ws=1)
+    def shape_scale(self, scale: float | tuple[float, float, float]):
+        if isinstance(scale, list | tuple):
+            cmds.scale(scale[0], scale[1], scale[2], self.cvs, a=1, ws=1)
+        elif isinstance(scale, float | int):
+            cmds.scale(scale, scale, scale, self.cvs, a=1, ws=1)
+
+    @property
+    def shape_pos(self) -> tuple[float, float, float]:
+        return (0.0, 0.0, 0.0)
+
+    @shape_pos.setter
+    def shape_pos(self, pos: tuple[float, float, float]):
+        cmds.move(pos[0], pos[1], pos[2], self.cvs, a=1, os=1)
 
     #endregion
 
@@ -318,24 +328,3 @@ def ctl_custom_shapes() -> dict:
         shapes = json.load(shapes_dict)
 
     return shapes
-
-if __name__ == '__main__':
-    component = Controller("test")
-    print("nom =",component.name)
-    component.side_suffix = "L"
-    print("true size =", component.side_suffix)
-    print("nom =",component.name)
-
-
-    print("-")
-
-    component = Controller("test_side_02_L")
-    print("nom =", component.name)
-    print("true size =", component.side_suffix)
-
-    print("-")
-
-    component = Controller("ctl_test_side_02_R")
-    print("component =", component, ", type =", component.COMPONENT_TYPE)
-    print("nom =", component.name)
-    print("true size =", component.side_suffix)

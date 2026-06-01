@@ -1,9 +1,11 @@
 from maya import cmds
 
+import copy
 from enum import Enum, auto
 
 from ..component.base import BaseComponent
-from devMaya.utils.api import get_hierarchy_list_from_root_node, replace_in_names
+from devMaya.utils.api import get_hierarchy_list_from_root_node, replace_in_names, create_set
+from devMaya.auto_rig.configs.config import Config
 
 class ModuleType(Enum):
 
@@ -21,6 +23,8 @@ class ModuleType(Enum):
     FEET = auto()
     EYE = auto()
 
+    WING = auto()
+
     SIMPLE = auto()
 
 class BaseModule(BaseComponent):
@@ -32,11 +36,12 @@ class BaseModule(BaseComponent):
         - a side_grp_name
         - an input
         - an output
+        - a DO NOT TOUCH grp
 
-
-    A module has to implement the following methods :
+    A module has to re-implement the following methods :
         - arrange_nodes(obj_to_parent)
         - set_input_and_output()
+        - bind_jnts()
 
     Optional methods:
         - parent_to(parent, maintain_offset=True)
@@ -48,14 +53,19 @@ class BaseModule(BaseComponent):
     OUTPUT_SUFFIX = "_output"
     SIDE_GROUP_PREFIX = "scale_"
 
-    def __init__(self, name: str=None):
-        super().__init__(name=name)
+    DO_NOT_TOUCH_GROUP_SUFFIX = "_DO_NOT_TOUCH"
 
-        self._build()
+    def __init__(self, name: str=None, config: Config=None, build=True):
+        super().__init__(name=name, config=config)
+        if build:
+            self._build()
 
     def _build(self):
         cmds.group(empty=True, name=self.side_grp_name)
         cmds.group(name=self.grp_name)
+
+        cmds.group(name=self.dont_touch_grp, empty=True)
+        cmds.parent(self.dont_touch_grp, self.grp_name)
 
         lct_in = cmds.spaceLocator(name=self.input)[0]
         lct_out = cmds.spaceLocator(name=self.output)[0]
@@ -96,34 +106,46 @@ class BaseModule(BaseComponent):
     def side_grp_name(self):
         return self.SIDE_GROUP_PREFIX + self.name + self.GROUP_SUFFIX
 
-    def duplicate_and_mirror(self):
-        if not self.side_suffix:
-            print("no side suffix")
-            return
+    @property
+    def dont_touch_grp(self):
+        return self.name + self.DO_NOT_TOUCH_GROUP_SUFFIX + self.GROUP_SUFFIX
 
-        # duplicate module and leave at place
+    def duplicate(self) -> BaseComponent | None:
+        opposite_side = self.opposite_side()
+        if not opposite_side:
+            return None
+
+        # duplicate module grp and leave at place
         new_module_grp = cmds.duplicate(self.grp_name, rr=True, un=True)[0]
-        old_module_grp_name = self.grp_name
 
-        # change this module side and rename
-        side_list = self.SIDE_SUFFIXES[:]
-        side_list.pop(self.SIDE_SUFFIXES.index(self.side_suffix))
-        new_size = side_list[0]
-        self.side_suffix = new_size
+        # duplicate this module before modifying it
+        new_module = copy.deepcopy(self)
 
-        # mirror this module
-        self.mirror() # mirror
+        new_module.side_suffix = opposite_side
 
-        # rename the new module group with the "1" added behind when duplicating
-        cmds.rename(new_module_grp, old_module_grp_name)
+        # rename the new module group without the "1" added behind when duplicating
+        cmds.rename(new_module_grp, self.grp_name)
+
+        return new_module
 
     def mirror(self, axis=[-1, 1, 1]):
-        if not self.side_suffix:
-            return
-
         scale = cmds.xform(self.side_grp_name, q=1, os=1, s=1, r=1)
-        new_scale = [scale[i] * axis[i] for i in range(len(axis))]
+        new_scale = [s * a for s, a in zip(scale, axis)]
         cmds.xform(self.side_grp_name, os=1, s=new_scale)
+
+    def duplicate_and_mirror(self) -> BaseComponent | None:
+        if not self.side_suffix:
+            print("Cannot duplicate and mirror without side suffix")
+            return None
+
+        new_module = self.duplicate()
+
+        if not new_module:
+            return None
+
+        new_module.mirror()
+
+        return new_module
 
     def arrange_nodes(self, obj_to_parent):
         """
@@ -145,13 +167,22 @@ class BaseModule(BaseComponent):
         # cmds.parentConstraint(self.jnts[-1], self.output, mo=False)[0]
         pass
 
-    def parent_to(self, parent, maintain_offset=True):
+    def parent_module(self, child, maintain_offset=True):
         """
-        Create child / parent relationship between modules by parent constraining them
+        Create parent / child relationship between modules
+        By parent constraining this module's output to other module's input
         """
-        if not isinstance(parent, BaseModule):
+        if not isinstance(child, BaseModule):
+            print("Child item is not an instance of BaseModule, "
+                  "couldn't find its input and parent it to this module")
             return
 
-        self.parent = parent
-        cmds.parentConstraint(parent.output, self.input, mo=maintain_offset, weight=1)
+        self.child = child
+        cmds.parentConstraint(self.output, child.input, mo=maintain_offset, weight=1)
 
+    def bind_jnts(self) -> list:
+        """
+        To be overridden by every module
+        """
+        create_set([], set_name="bind_jnts_set")
+        return []
