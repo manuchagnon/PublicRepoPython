@@ -13,12 +13,18 @@ I know there is room for improvment but i am really motivated to continue learni
   - Python OOP
   - Pyside dynamic ui
   - Maya cmds
-    
-# And i am learning :
+
+# Project :
+My main project is building my own **modular auto-rig for Maya**.
+
+I've put in a lot of effort building a solid base for the development of any module, component and config.
+For now, I've made very good progress on all Biped modules and I also started developing modules for Bird Rigging automation. 
+
+# I am currently learning :
   - Maya OpenMaya
   - Blender Python
 
-# My other Hard Skills are :
+# And my other Hard Skills are :
   - Maya
   - Blender
   - Nuke
@@ -26,12 +32,13 @@ I know there is room for improvment but i am really motivated to continue learni
   - Substance Painter
   - Unreal Engine
 
-# Check out my media :
+# Check out my links :
   - Rigging Demo Reel : https://www.artstation.com/artwork/AZzBle
   - Artstation : [https://www.artstation.com/emmanuelchagnon7](https://www.artstation.com/emmanuelchagnon7)
   - Linkedin : [https://www.linkedin.com/in/emmanuel-chagnon-336408264/](https://www.linkedin.com/in/emmanuel-chagnon-336408264/)
   - Mail : [chagnon.emmanuel@gmail.com](mailto:chagnon.emmanuel@gmail.com)
   - Resume Pro : [https://drive.google.com/drive/folders/1vw7Yl9z-w1vObgKibN18ATwdODarjtdM?usp=drive_link](https://drive.google.com/drive/folders/1vw7Yl9z-w1vObgKibN18ATwdODarjtdM?usp=drive_link) 
+
 
 **I want to thank my internship supervisors Simon Legrand and Gilles de Saint-Haubert at the Studio Benuts (La Hulpe, Belgium)
 for teaching me OOP programming and how to "python" the good way.**
