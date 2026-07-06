@@ -5,6 +5,7 @@ from maya import cmds
 import maya.api.OpenMaya as om
 
 from devMaya.auto_rig.component.controller import Controller
+from devMaya.utils.attribute import Attribute, Separator
 
 
 """
@@ -312,6 +313,53 @@ def change_ctl_line_widths(ctl_list=[], width=-1, in_autorig=True):
     if not in_autorig:
         cmds.select(ctl_list)
 
+def create_switch_parent_setup_on_ctl(parents : list[str],
+                                      switch_ctl : Controller,
+                                      parents_names : list[str] = [],
+                                      name = "",
+                                      override_names : list[str] = ["normal"],
+                                      parent_at_start : str = None
+                                      ):
+    """
+    Parent constraint the switch_ctl by creating a switch parent setup with chosen parents
+    """
+
+    if not parents_names:
+        parents_names = parents
+
+    # Attribute and Separator
+    separator = Separator(node=switch_ctl.name, separator_name="space")
+    separator.add_to_node(switch_ctl.name)
+    switch_attr = Attribute(long_name="switch_parent",
+                            type="enum",
+                            enum_names=override_names + parents_names[len(override_names):]
+                            )
+    switch_attr.add_to_node(switch_ctl.name)
+    cst = cmds.parentConstraint(*parents, switch_ctl.zro_grp_name, mo=True)[0]
+
+
+    for i, parent in enumerate(parents_names):
+        if parent == parent_at_start:
+            cmds.setAttr(switch_attr, i)
+        if i == 0:
+            # normal parenting
+            normal_cdt = cmds.createNode("condition", name="cdt_" + "normal_" + name)
+            switch_attr.plug_to(f"{normal_cdt}.firstTerm")
+            cmds.setAttr(f"{normal_cdt}.secondTerm", 0)
+            cmds.setAttr(f"{normal_cdt}.operation", 0)
+            cmds.setAttr(f"{normal_cdt}.colorIfTrueR", 1)
+            cmds.setAttr(f"{normal_cdt}.colorIfFalseR", 0)
+            cmds.connectAttr(f"{normal_cdt}.outColorR", f"{cst}.target[0].targetWeight", f=1)
+            continue
+
+        # other parents
+        cdt = cmds.createNode("condition", name="cdt_" + parent + "_" + name)
+        switch_attr.plug_to(f"{cdt}.firstTerm")
+        cmds.setAttr(f"{cdt}.secondTerm", i)
+        cmds.setAttr(f"{cdt}.operation", 0)
+        cmds.setAttr(f"{cdt}.colorIfTrueR", 1)
+        cmds.setAttr(f"{cdt}.colorIfFalseR", 0)
+        cmds.connectAttr(f"{cdt}.outColorR", f"{cst}.target[{i}].targetWeight", f=1)
 
 
 # replaced by property inside object controller
@@ -320,9 +368,6 @@ def select_all_cvs(ctl_list: list[str] = []):
         ctl_list = cmds.ls(sl=1)
 
     cvs_selected = [get_ctl(ctl).cvs for ctl in ctl_list]
-
-    for ctl in ctl_list:
-        print(get_ctl(ctl).cvs)
 
     cmds.select(*cvs_selected)
 

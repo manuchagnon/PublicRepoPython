@@ -4,11 +4,20 @@ from .annotation import (
 )
 
 from .attribute import (
+    Attribute, Separator,
+
     lock_attributes,
     connect_attributes,
     add_separator_attribute,
+    get_custom_non_hidden_attributes,
+    add_custom_attributes,
+    create_attribute_cache_node,
+    remove_custom_attributes,
 )
+from .constraint import (
+    hinge_constraint,
 
+)
 from .controller import (
     create_ctl,
     create_ctls,
@@ -31,6 +40,8 @@ from .controller import (
     select_all_cvs,
 
     get_ctl_shapes,
+
+    create_switch_parent_setup_on_ctl,
 
 
 )
@@ -57,6 +68,7 @@ from .ik_solver import (
 from .joint import (
     create_jnt,
     create_jnts,
+    set_jnt_color,
     create_jnt_chain,
     create_jnt_chain_on_crv,
     subdivide_jnt_chain,
@@ -66,6 +78,17 @@ from .joint import (
     mirrored_joints,
     skinned_joints,
     get_skin_cluster,
+
+    create_jnt_chain_blending,
+    create_jnt_chain_translate_blending,
+    create_jnt_chain_rotate_blending
+)
+
+from .matrix import (
+    aim_matrix_constraint,
+    create_decompose_matrix_node,
+    get_world_matrix,
+    extract_axes_from_matrix,
 )
 
 from .name import (
@@ -74,6 +97,7 @@ from .name import (
     rename_and_increment,
     determine_component_name,
     determine_base_name,
+    get_name_part,
 )
 
 from .nurbs_curve import (
@@ -83,13 +107,20 @@ from .nurbs_curve import (
     constraint_lct_to_crv_with_parameter_u,
     distribute_lct_on_crv,
     create_crv_with_vtx,
+    create_crv_with_obj_list,
+    create_crv_with_pos_list,
+)
+
+from .open_maya import (
+    get_dag_path,
 )
 
 from .position import lerp_pos
 
 from .selection import (
     select_object,
-    select_objects
+    select_objects,
+    convert_range_into_list,
 )
 
 from .set import (
@@ -98,6 +129,10 @@ from .set import (
 )
 
 from .undo import undo_chunk
+
+from .vector import (
+    dot
+)
 
 from .vertex import (
     find_closest_vertex_to_point,

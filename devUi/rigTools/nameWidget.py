@@ -45,7 +45,7 @@ class NameWidget(QtWidgets.QWidget):
         # Form Layout
         layout = QtWidgets.QFormLayout()
         layout.setLabelAlignment(QtCore.Qt.AlignRight)
-        layout.addRow("Search by :", self._target_line)
+        layout.addRow("Search :", self._target_line)
         layout.addRow("Replace by :", self._replace_line)
         layout.addRow("", self._target_replace_btn)
 

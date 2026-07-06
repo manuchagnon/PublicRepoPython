@@ -3,6 +3,7 @@ from maya import cmds
 from enum import Enum, auto
 
 from devMaya.auto_rig.configs.config import Config
+from devUi.utils.colors import Colors
 
 
 class ComponentType(Enum):
@@ -19,16 +20,31 @@ class ComponentType(Enum):
 
 
 class BaseComponent(object):
+    """
+    A Component is the smallest portion of every auto-rig parts
+    It is the base class shared by every parts
+
+    It stores attributes needed by all like some suffixes, prefixes, side suffixes, SCALE, etc.
+
+    A controller is a BaseComponent while a Limb is a child class ComposedComponent because it contains several BaseComponents
+    Currently only controllers are atomic parts only, every other components are ComposedComponents
+    But I could later implement other atomic parts like Joints, Follicles, Geometries...
+
+    """
 
     NAME_SPACE = None
-    TYPE = ComponentType.NONE
-    SIDE_SUFFIXES = ["_L", "_R"]
-    JOINT_ORIENT = "X"
-    JOINT_PREFIX = "jnt_"
-    LOCATOR_PREFIX = "lct_"
-    CURVE_PREFIX = "crv_"
-    GROUP_SUFFIX = "_grp"
-    SCALE = 1
+    TYPE : ComponentType = ComponentType.NONE
+
+    AXES = ("X", "Y", "Z")
+    JNT_ORIENT : str ="xyz"
+    SIDE_SUFFIXES : list[str] = ["_L", "_R"]
+    JOINT_PREFIX : str = "jnt_"
+    CONTROLLER_PREFIX : str = "ctl_"
+    LOCATOR_PREFIX : str = "lct_"
+    CURVE_PREFIX : str = "crv_"
+    GROUP_SUFFIX : str = "_grp"
+    BLEND_SHAPE_PREFIX : str = "bs_"
+    SCALE : float = 1.0
 
     def __init__(self, name: str = None, config: Config = None):
         # Implement Config behavior
@@ -44,7 +60,7 @@ class BaseComponent(object):
             for suffix in self.SIDE_SUFFIXES:
                 if suffix in name:
                     side = suffix
-                    name = name.rsplit(suffix, 1)[0]
+                    name = name.rsplit(suffix, 1)[0] + name.rsplit(suffix, 1)[-1]
             self._name = name
             self._side = side
 
@@ -88,7 +104,10 @@ class BaseComponent(object):
     def name(self, name):
         old_name = self.name
         self._name = name
-        cmds.rename(old_name, self.name)
+        try:
+            cmds.rename(old_name, self.name)
+        except :
+            pass
     #endregion
     #region -- Type
 
@@ -139,8 +158,15 @@ class BaseComponent(object):
                 self._datas[attr] = object.__getattribute__(self, attr)
 
         if isinstance(config, Config):
-            for key, value in config.__dict__().items():
-                if hasattr(self, key): # doesn't store attributes that aren't used inside this component
+            for key, value in config.datas.items():
+                if hasattr(self, key):
                     self._datas[key] = value
+                else:
+                    # doesn't store attributes that aren't used inside this component
+                    # e.g : when the config has the key CTL_IK_SHAPE but this component doesn't have this attribute
+                    continue
 
     #endregion
+
+
+

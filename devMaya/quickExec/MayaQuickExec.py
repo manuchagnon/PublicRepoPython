@@ -8,7 +8,6 @@ def run():
         # exec(open(r"C:\Users\Utilisateur\AppData\Roaming\JetBrains\PyCharm2025.3\scratches\scratch.py").read())
         exec(open(r"C:\Users\Utilisateur\AppData\Roaming\JetBrains\PyCharm2025.3\scratches\scratch_hierarchy.py").read())
 
-
     except Exception as e:
         raise Exception(traceback.format_exc())
 

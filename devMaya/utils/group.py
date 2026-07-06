@@ -32,6 +32,7 @@ def create_grp(obj : str, gizmo_status = 0, gizmo_target_obj = None, suffix = ""
         obj_parent = cmds.listRelatives(obj, parent=1)
         cmds.parent(grp, obj_parent)
 
+    cmds.xform(grp, os=1, scale=[1,1,1])
     cmds.parent(obj, grp)
 
     if gizmo_status == 1:

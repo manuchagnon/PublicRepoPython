@@ -16,7 +16,7 @@ def create_set(obj_list, set_name : str = None):
         add_to_set(obj_list, set_name)
     else:
         cmds.sets(name=set_name, empty=True)
-        cmds.sets(*obj_list, add=set_name)
+        cmds.sets(obj_list, add=set_name)
 
 def add_to_set(obj_list, set_name):
     if not cmds.objExists(set_name):

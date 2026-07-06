@@ -1,6 +1,7 @@
 from maya import cmds
 
 from devMaya.auto_rig.component.base import BaseComponent, ComponentType
+from devMaya.auto_rig.component.composed import ComposedComponent
 from devMaya.auto_rig.configs.config import Config
 from devMaya.utils.position import lerp_pos
 from devMaya.utils.nurbs_curve import create_crv_with_obj_list
@@ -8,7 +9,7 @@ from devMaya.utils.follicle import create_flc_on_surface
 from devMaya.utils.controller import create_ctl, create_ctls
 from devMaya.utils.joint import create_jnt, create_jnts, reset_jnts_orient
 
-class Ribbon(BaseComponent):
+class Ribbon(ComposedComponent):
     """
     A Ribbon component contains :
         - A surface : srf_name
@@ -75,7 +76,7 @@ class Ribbon(BaseComponent):
 
     def add_offset_ctls(self):
         """
-        Add offset ontrollers inside follicles
+        Add offset controllers inside follicles
         """
         for flc in self._flcs:
             ctl = create_ctl(flc, zro_grp=True, parent=1)
@@ -140,11 +141,11 @@ class LimbRibbon(Ribbon):
 
         self._jnt_list = jnt_list
 
-        self.build()
+        self._build()
 
     def __build_wit_extrusion(self):
         """
-        Not used
+        Not used, not working
         Create two curves and extrude them to obtain a surface
         """
         crv_1 = create_crv_with_obj_list(self._jnt_list, name="crv_1", crv_subdivision=2, degree=3)
@@ -177,7 +178,7 @@ class LimbRibbon(Ribbon):
                            )
         srf = cmds.extendSurface(srf, ch=self.CONSTRUCTION_HISTORY, extendSide=0, extensionType = 0, extendDirection=1)
 
-    def build(self):
+    def _build(self):
         """
         Build the ribbon component with a curve and two offset curves lofted
         """
@@ -187,7 +188,7 @@ class LimbRibbon(Ribbon):
         crv_2 = cmds.offsetCurve(crv_base, ch=self.CONSTRUCTION_HISTORY, d=-self.SCALE/2, rn=False, cb=2, st=True, cl=True, cr=0, tol=0, sd=0, ugn=False)
 
         srf = cmds.loft(crv_1, crv_2, name=self.name, ch=self.CONSTRUCTION_HISTORY, u=1, c=0,
-                             ar=1, d=2, ss=1, rn=0, po=0, rsn=True)
+                             ar=1, d=1, ss=1, rn=0, po=0, rsn=True)
 
         if not self.CONSTRUCTION_HISTORY:
             cmds.delete(crv_base, crv_1, crv_2)

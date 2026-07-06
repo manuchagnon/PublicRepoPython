@@ -1,1 +1,1 @@
-from .colors import get_color, color_dict
+from .colors import get_color, color_dict, Colors

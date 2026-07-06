@@ -1,31 +1,45 @@
 import os
 import json
 
+from devUi.utils.colors import colors_file_path
 from maya import cmds
 import maya.api.OpenMaya as om
 
 from devMaya.auto_rig.component.base import BaseComponent, ComponentType
 from devMaya.utils.group import create_grp
 from devMaya.utils.name import determine_base_name
-from devUi.utils.api import get_color
 from devUtils.maths import remap_value
+from devUi.utils.colors import Colors
 
-# class ControllerShape:
-#     """
-#     Object oriented way of accessing controller's shape
-#     """
-#
-#     @property.setter
-#     def rot(self, axis: str, degrees:int):
-#         axis_list = ["X", "Y", "Z"]
-#         if axis not in axis_list:
-#             return
-#         if axis == "X":
-#             cmds.rotate(degrees, 0, 0, ctl.cvs, a=1, os=1)
-#         if axis == "Y":
-#             cmds.rotate(0, degrees, 0, ctl.cvs, a=1, os=1)
-#         if axis == "Z":
-#             cmds.rotate(0, 0, degrees, ctl.cvs, a=1, os=1)
+class ControllerShapes(dict):
+    """
+    Container for Controller Shapes
+    Implement type hint for controller shape
+    """
+    SHAPES_LIST = {}
+    _instance = None
+
+    @classmethod
+    def _load(cls):
+        if not cls.SHAPES_LIST:
+            cls.SHAPES_LIST = ctl_custom_shapes()
+
+    @classmethod
+    def keys(cls) -> list[str]:
+        cls._load()
+        return cls.SHAPES_LIST.keys()
+
+    @classmethod
+    def __getitem__(cls, key) -> dict[list[list]] | None:
+        cls._load()
+        return cls.SHAPES_LIST.get(key)
+
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+            cls._load()
+        return cls._instance
+
 
 class Controller(BaseComponent):
     """
@@ -42,7 +56,6 @@ class Controller(BaseComponent):
 
     COMPONENT_TYPE = ComponentType.CONTROLLER
 
-    CONTROLLER_PREFIX = "ctl_"
     ZRO_GROUP_SUFFIX = "_ZRO_grp"
     NORMAL = [0, 1, 0]
     SUFFIX = ""
@@ -56,8 +69,7 @@ class Controller(BaseComponent):
 
             self.has_zro_grp: bool = False
 
-            self.radius: float = None
-            self.normal: [int, int, int] = None
+            self.normal: list[int] = None
             self._offset_grp_list = []
 
         else:
@@ -68,14 +80,13 @@ class Controller(BaseComponent):
 
     #region -- Builder
 
-    def build(self, name: str, zro_grp=True, radius=1, normal=None, shape="circle"):
-        self._name = determine_base_name(name, prefix=self.CONTROLLER_PREFIX, side_suffixes = self.SIDE_SUFFIXES)
+    def build(self, name: str, zro_grp=True, radius=1, normal=None):
+        self._name = self.determine_base_controller_name(name)
 
-        self.radius = radius
         self.normal = normal if normal else self.NORMAL
         self._offset_grp_list = []
 
-        ctl = cmds.circle(name=self.name, radius=self.radius, normal=self.normal, ch=0)[0]
+        ctl = cmds.circle(name=self.name, normal=self.normal, ch=0)[0]
         cmds.rename(ctl, self.name)
 
         self.has_zro_grp = zro_grp
@@ -91,8 +102,11 @@ class Controller(BaseComponent):
         self.has_zro_grp = cmds.objExists(self.name + self.ZRO_GROUP_SUFFIX)
         self._offset_grp_list = []
 
-        self.radius = 1
         self.normal = [0, 1, 0]
+
+    def determine_base_controller_name(self, name):
+        return determine_base_name(name, prefix=self.CONTROLLER_PREFIX, side_suffixes = self.SIDE_SUFFIXES)
+
     #endregion
 
     #region -- Name
@@ -115,22 +129,35 @@ class Controller(BaseComponent):
         return cmds.xform(self.name, q=True, ws=True, t=True)
 
     @pos.setter
-    def pos(self, pos: tuple[float, float, float]):
+    def pos(self, pos: tuple[float, float, float] | str):
         if self.has_zro_grp:
-            cmds.xform(self.zro_grp_name, ws=True, t=pos)
+            target = self.zro_grp_name
         else:
-            cmds.xform(self.name, ws=True, t=pos)
+            target = self.name
+
+        if isinstance(pos, Controller):
+            pos = pos.name
+        if isinstance(pos, str):
+            pos = cmds.xform(pos, q=True, ws=True, t=True)
+
+        cmds.xform(target, ws=True, t=pos)
 
     @property
     def rot(self):
-        cmds.xform(self.name, q=True, ws=True, ro=True)
+        return cmds.xform(self.name, q=True, ws=True, ro=True)
 
     @rot.setter
     def rot(self, rot: tuple[float, float, float]):
         if self.has_zro_grp:
-            cmds.xform(self.zro_grp_name, ws=True, ro=rot)
+            target = self.zro_grp_name
         else:
-            cmds.xform(self.name, ws=True, ro=rot)
+            target = self.name
+
+        if isinstance(rot, str):
+            rot = cmds.xform(rot, q=True, ws=True, ro=True)
+
+        cmds.xform(target, ws=True, ro=rot)
+
 
     #endregion
 
@@ -145,27 +172,30 @@ class Controller(BaseComponent):
         return self.shapes[0]
 
     @shape.setter
-    def shape(self, shape_name: str):
+    def shape(self, shape_name: ControllerShapes | str):
         """
         change the shape of the controller by applying a custom shape
         Args:
             - shape_name : the name of the shape to be transformed into,
             has to be one of the keys in the custom shape dictionary
         """
-        # get the dictionary containing custom shapes
-        shapes = ctl_custom_shapes()
+        # instance ControllerShapes to get the dictionary containing custom shapes, one time
+        shapes = ControllerShapes()
 
-        if not shape_name in shapes:
+        shape_data = shapes[shape_name]
+        if not shape_data:
             return
 
         color = self.color
         line_width = self.line_width
-        cv, degree, periodic = shapes[shape_name].values()
+        cv, degree, periodic = shape_data.values()
 
         if isinstance(cv, str) and cv == "circle":
             crv = cmds.circle(r=1, normal=[0, 1, 0], ch=0)[0]
         else:
-            crv = cmds.curve(p=cv, degree=degree, periodic=periodic)
+            crv = cmds.curve(p=cv, degree=degree, periodic=0)
+            if periodic:
+                cmds.closeCurve(crv, ch=0, ps=1, rpo=1, bb=0.5, bki=0, p=0.1)
         cmds.rename(crv, "ctl_temp")
         crv = "ctl_temp"
         cmds.rename(f"{crv}Shape", "ctl_tempShape")
@@ -185,6 +215,7 @@ class Controller(BaseComponent):
 
         self.color = color
         self.line_width = line_width
+        self.shape_scale = self.SCALE
 
     @property
     def degree(self) -> int:
@@ -231,9 +262,9 @@ class Controller(BaseComponent):
     @shape_scale.setter
     def shape_scale(self, scale: float | tuple[float, float, float]):
         if isinstance(scale, list | tuple):
-            cmds.scale(scale[0], scale[1], scale[2], self.cvs, a=1, ws=1)
+            cmds.scale(scale[0], scale[1], scale[2], self.cvs, a=1, os=1)
         elif isinstance(scale, float | int):
-            cmds.scale(scale, scale, scale, self.cvs, a=1, ws=1)
+            cmds.scale(scale, scale, scale, self.cvs, a=1, os=1)
 
     @property
     def shape_pos(self) -> tuple[float, float, float]:
@@ -241,7 +272,7 @@ class Controller(BaseComponent):
 
     @shape_pos.setter
     def shape_pos(self, pos: tuple[float, float, float]):
-        cmds.move(pos[0], pos[1], pos[2], self.cvs, a=1, os=1)
+        cmds.move(pos[0], pos[1], pos[2], self.cvs, os=1, r=1)
 
     #endregion
 
@@ -253,30 +284,37 @@ class Controller(BaseComponent):
         return tuple([remap_value(c, 0, 1, 0, 255) for c in color])
 
     @color.setter
-    def color(self, color: tuple[int, int, int] | str | int, channels=("R", "G", "B")):
-        cmds.setAttr(f"{self.shape}.overrideEnabled", 1)
-        cmds.setAttr(f"{self.shape}.overrideRGBColors", 1)
+    def color(self, color: Colors | tuple[int, int, int] | str | int, channels: tuple[str] | None=None):
+        if not cmds.getAttr(f"{self.shape}.overrideEnabled") == 1:
+            cmds.setAttr(f"{self.shape}.overrideEnabled", 1)
+            cmds.setAttr(f"{self.shape}.overrideRGBColors", 1)
 
-        if isinstance(color, str | int):
-            color = get_color(color)
-        # elif isinstance(color, int):
-        #     color = get_color(color)
-        elif isinstance(color, tuple):
-            color = [color[0], color[1], color[2]]
+        colors = Colors()
+        color = colors.get_color(color)
+        # if isinstance(color, str | int):
+        #     color = colors.get_color(color)
+        # elif isinstance(color, tuple):
+        #     color = [color[0], color[1], color[2]]
 
         color = [remap_value(c, 0, 255, 0, 1) if c > 1 else 0 for c in color]
-
+        if not channels:
+            channels = colors.CHANNELS
         for i, channel in enumerate(channels):
             cmds.setAttr(f"{self.shape}.overrideColor{channel}", color[i])
 
-    # -- Side
+    #endregion
+
+    #region -- Side
 
     # Overwrite the side_suffix property setter in order to rename the zro_group as well
-    @BaseComponent.side_suffix.setter
-    def side_suffix(self, side):
-        BaseComponent.side_suffix.fset(self, side)
-        if self.has_zro_grp and self._side:
-            cmds.rename(self.zro_grp_name, self.name + "_" + self._side + self.ZRO_GROUP_SUFFIX)
+    # @BaseComponent.side_suffix.setter
+    # def side_suffix(self, side):
+    #     print("pipi")
+    #     if self.has_zro_grp:
+    #         old_zro_grp_name = self.zro_grp_name
+    #         print("OLD", old_zro_grp_name)
+    #
+    #     BaseComponent.side_suffix.fset(self, side)
 
     #endregion
 
@@ -320,6 +358,13 @@ class Controller(BaseComponent):
         return new_grp
 
     #endregion
+
+    @property
+    def parent(self):
+        if self.has_zro_grp:
+            return cmds.listRelatives(self.zro_grp_name, parent=True)[0]
+        else:
+            return cmds.listRelatives(self.name, parent=True)[0]
 
 def ctl_custom_shapes() -> dict:
     shapes_file_path = r"C:\Documents\2_GIT\MyRepo\devMaya\utils\controller_shapes.json"

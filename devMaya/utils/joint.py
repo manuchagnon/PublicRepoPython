@@ -3,9 +3,12 @@ import maya.api.OpenMaya as om
 
 from devMaya.utils.controller import get_ctl_shapes
 from devMaya.utils.nurbs_curve import distribute_lct_on_crv
-
 from devMaya.utils.name import get_name_part, rename_and_increment
 from devMaya.utils.position import lerp_pos
+from devUi.utils.colors import Colors
+
+from devUtils.maths import remap_value
+
 """
 Functions that deals with :
 creating joints
@@ -278,4 +281,75 @@ def skin_joints(joints, skin_cluster=None, obj=None, max_inf=3, weight=0.0, remo
 
     return True
 
+def set_jnt_color(jnt, color : Colors | str):
+    cmds.setAttr(f"{jnt}.overrideEnabled", 1)
+    cmds.setAttr(f"{jnt}.overrideRGBColors", 1)
+
+    color = Colors.get_color(color)
+
+    color = [remap_value(c, 0, 255, 0, 1) if c > 1 else 0 for c in color]
+
+    for i, channel in enumerate(Colors.CHANNELS):
+        cmds.setAttr(f"{jnt}.overrideColor{channel}", color[i])
+
+
+def create_jnt_chain_rotate_blending(jnt_chain_parent_1:list[str],
+                              jnt_chain_parent_2:list[str],
+                              jnt_chain_target:list[str],
+                              attribute_blender:str,
+                              suffix=""
+                              ):
+    for joint_IK, joint_FK, joint_blend in zip(jnt_chain_parent_1, jnt_chain_parent_2, jnt_chain_target):
+
+        # create rotate pair_blend
+        pair_blend = cmds.createNode("pairBlend", name=f'{joint_blend}_pb')
+
+        # connect rotates to pair_blend
+        cmds.connectAttr(f'{joint_FK}.rotate', f'{pair_blend}.inRotate1')
+        cmds.connectAttr(f'{joint_IK}.rotate', f'{pair_blend}.inRotate2')
+        cmds.connectAttr(f'{pair_blend}.outRotate', f'{joint_blend}.rotate')
+
+        # connect switch attribute to pair_blend weight
+        cmds.connectAttr(attribute_blender, f'{pair_blend}.weight', f=1)
+
+
+def create_jnt_chain_translate_blending(jnt_chain_parent_1:list[str],
+                              jnt_chain_parent_2:list[str],
+                              jnt_chain_target:list[str],
+                              attribute_blender:str,
+                              suffix=""
+                              ):
+    for joint_IK, joint_FK, joint_blend in zip(jnt_chain_parent_1, jnt_chain_parent_2, jnt_chain_target):
+        # create translate blend color
+        blend_colors = cmds.createNode("blendColors", name=f'{joint_blend}_bc')
+
+        # connect translates to pair_blend
+        cmds.connectAttr(f'{joint_FK}.translate', f'{blend_colors}.color2')
+        cmds.connectAttr(f'{joint_IK}.translate', f'{blend_colors}.color1')
+        cmds.connectAttr(f'{blend_colors}.output', f'{joint_blend}.translate')
+
+        # connect switch attribute to pair_blend weight
+        cmds.connectAttr(attribute_blender, f'{blend_colors}.blender', f=1)
+
+
+def create_jnt_chain_blending(jnt_chain_parent_1:list[str],
+                              jnt_chain_parent_2:list[str],
+                              jnt_chain_target:list[str],
+                              attribute_blender:str,
+                              suffix=""
+                              ):
+    """
+    Create a setup of blending two joint chains into one
+    Used for blending Ik and Fk joint chains
+    """
+    create_jnt_chain_translate_blending(jnt_chain_parent_1=jnt_chain_parent_1,
+                              jnt_chain_parent_2=jnt_chain_parent_2,
+                              jnt_chain_target=jnt_chain_target,
+                              attribute_blender=attribute_blender,
+                              suffix=suffix)
+    create_jnt_chain_rotate_blending(jnt_chain_parent_1=jnt_chain_parent_1,
+                              jnt_chain_parent_2=jnt_chain_parent_2,
+                              jnt_chain_target=jnt_chain_target,
+                              attribute_blender=attribute_blender,
+                              suffix=suffix)
 

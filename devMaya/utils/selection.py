@@ -4,15 +4,18 @@ import maya.api.OpenMaya as om
 """
 Functions that deals with :
 selecting object(s)
+converting range selection into flat list
 
 """
 
-def select_object(obj=None):
+def select_object(obj=None) -> str | None:
     if not obj:
-        try:
-            obj = cmds.ls(sl=1)[0]
-        except:
+        sl = cmds.ls(sl=1)
+        if sl:
+            obj = sl[0]
+        else:
             print("No object Selected")
+            return None
 
     try:
         cmds.select(obj)
@@ -27,3 +30,7 @@ def select_objects(obj=[]):
         obj = cmds.ls(sl=1)[0]
     if obj:
         cmds.select(obj)
+
+def convert_range_into_list(range:str) -> list[str]:
+    return cmds.ls(range, flatten=True)
+

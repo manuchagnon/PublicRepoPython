@@ -1,6 +1,7 @@
 from maya import cmds
 import maya.api.OpenMaya as om
 
+from devUtils.maths import lerp_vector_three
 """
 Functions that deals with :
 interpolating positions
@@ -17,13 +18,13 @@ def lerp_pos(obj1: str | list[str], obj2: str | list[str], factor=0.5):
         pos1 = cmds.xform(obj1, query=True, worldSpace=True, translation=True)
     elif isinstance(obj1, list):
         pos1 = obj1
+
     if isinstance(obj2, str):
         pos2 = cmds.xform(obj2, query=True, worldSpace=True, translation=True)
     elif isinstance(obj2, list):
         pos2 = obj2
 
-    x = pos1[0] + factor * (pos2[0] - pos1[0])
-    y = pos1[1] + factor * (pos2[1] - pos1[1])
-    z = pos1[2] + factor * (pos2[2] - pos1[2])
+    x, y, z = lerp_vector_three(pos1, pos2, factor)
 
-    return [x, y, z]
+
+    return (x, y, z)

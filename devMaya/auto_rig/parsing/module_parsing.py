@@ -9,7 +9,6 @@ class ParseModule(BaseModule):
     e.g when you modified controllers, and you want to mirror the module
 
     TO DO:
-    Make it deduct its bind_jnts, its parent output
     """
 
     INFOS = """
@@ -127,3 +126,23 @@ class ParseModule(BaseModule):
 
     def _print_success_message(self, module_name: str):
         print(f"\tSUCCESS : Parsed module '{module_name}'")
+
+    def arrange_nodes(self, obj_to_parent):
+        """
+        Parent all the elements under module input
+        """
+        pass
+
+    def set_input_and_output(self, input : str, output : str, input_pos=None, output_pos=None):
+        """
+        Positions lct input at the right place
+        Positions and constraints lct output to the right place
+        """
+        pass
+
+    def bind_jnts(self, bind_jnts:list[str]) -> list[str]:
+        """
+        To be overridden by every module
+        """
+        pass
+    # endregion

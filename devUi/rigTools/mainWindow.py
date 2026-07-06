@@ -11,6 +11,7 @@ from .follicleWidget import FollicleWidget
 from .jointWidget import JointWidget
 from .groupWidget import GroupWidget
 from .nameWidget import NameWidget
+from ..attributeTool.mainWidget import AttributeWindow
 from devUi.skinTools.mainWindow import SkinWindow
 
 
@@ -47,17 +48,21 @@ class RigWindow(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         # Rename
         rename_widget = NameWidget()
 
+        # Attribute
+        attribute_widget = AttributeWindow()
+
         # Tab Widget
         tabs = QtWidgets.QTabWidget()
         tabs.addTab(controller_widget, "Controller")
+        tabs.addTab(rename_widget, "Name")
+        tabs.addTab(attribute_widget, "Attribute")
         tabs.addTab(follicle_widget, "Follicle")
         tabs.addTab(joint_widget, "Joint")
-        tabs.addTab(rename_widget, "Name")
         tabs.addTab(group_widget, "Group")
         tabs.addTab(skinning_widget, "Skinning")
 
         # Infos
-        _infos_label = QtWidgets.QLabel("Emmanuel Chagnon 03/2026\nchagnon.emmanuel@gmail.com")
+        _infos_label = QtWidgets.QLabel("Emmanuel Chagnon 06/2026\nchagnon.emmanuel@gmail.com")
         _infos_label.setAlignment(QtCore.Qt.AlignCenter)
 
         # Main Layout
@@ -70,7 +75,7 @@ class RigWindow(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         self.setLayout(layout)
         self.setWindowTitle(self.TOOL_NAME)
         self.setMinimumWidth(425)
-        self.setMinimumHeight(700)
+        self.setMinimumHeight(900)
         self.setStyleSheet(self.STYLE_SHEET)
 
 if __name__ == '__main__':

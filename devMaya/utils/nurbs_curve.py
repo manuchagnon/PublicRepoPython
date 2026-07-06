@@ -65,7 +65,7 @@ def constraint_lct_to_crv_with_parameter_u(crv: str, param_u: float=0,  constrai
     return lct
 
 
-def distribute_lct_on_crv(crv: str, inst_number: int, constrained: bool=True, param_u_start: float=0.0, param_u_end: float=1.0):
+def distribute_lct_on_crv(crv: str, inst_number: int, constrained: bool=True, param_u_start: float=0.0, param_u_end: float=1.0)->list[str]:
     """
     Instance Locators equally along the curve
 
@@ -98,29 +98,40 @@ def create_crv_with_vtx(vtx_list: list[str], prefix="crv_", suffix="_high"):
 
 def create_crv_with_obj_list(obj_list: list[str], degree: int=1, crv_subdivision=2, name="", prefix="crv_", suffix=""):
     """
+    Create a nurbsCurve with objects in a list
+    """
+
+    cvs_pos = [cmds.xform(obj, q=1, ws=1, t=1) for obj in obj_list]
+
+    crv = create_crv_with_pos_list(pos_list=cvs_pos, degree=degree, crv_subdivision=crv_subdivision, name=name, prefix=prefix, suffix=suffix)
+
+    return crv
+
+def create_crv_with_pos_list(pos_list: list[list[float]], degree: int=1, crv_subdivision=2, name="", prefix="crv_", suffix="") -> str:
+    """
     Create a nurbsCurve with positions of objects in a list
     """
 
-    if degree == 1:
-        cvs_pos = [cmds.xform(obj, q=1, ws=1, t=1) for obj in obj_list]
-        crv = cmds.curve(d=1, p=cvs_pos, n=f"{prefix}{name}{suffix}")
-        return crv
+    if degree == 1 or degree == 2:
+        crv = cmds.curve(d=degree, p=pos_list, n=f"{prefix}{name}{suffix}")
+        shape = cmds.listRelatives(crv, shapes=True)[0]
+        cmds.rename(shape, crv + "Shape")
 
-    if degree == 3:
+    elif degree == 3:
         crv_list = []
-        for i in range(len(obj_list[:-1])):
-            obj_start = obj_list[i]
-            obj_end = obj_list[i+1]
+        for i in range(len(pos_list[:-1])):
+            pos_start = pos_list[i]
+            pos_end = pos_list[i + 1]
 
-            pos_start = cmds.xform(obj_start, q=1, ws=1, t=1)
-            pos_end = cmds.xform(obj_end, q=1, ws=1, t=1)
+            # pos_start = cmds.xform(obj_start, q=1, ws=1, t=1)
+            # pos_end = cmds.xform(obj_end, q=1, ws=1, t=1)
 
             crv = cmds.curve(d=1, p=[pos_start, pos_end], n=f"{prefix}{name}_{i}")
-            old_crv = cmds.rebuildCurve(crv, ch=0, rpo=1, rt=0, end=1, kr=1, kcp=0, kep=1, kt=1, s=crv_subdivision, d=3, tol=0.01)
-
+            old_crv = cmds.rebuildCurve(crv, ch=0, rpo=1, rt=0, end=1, kr=1, kcp=0, kep=1, kt=1, s=crv_subdivision,
+                                        d=3, tol=0.01)
             if i > 0:
-                crv = cmds.attachCurve(crv, crv_list[i-1], ch=0, rpo=0, kmk=0, m=0, bb=0.5, bki=0, p=0.1)[0]
-                cmds.delete(crv_list[i-1])
+                crv = cmds.attachCurve(crv, crv_list[i - 1], ch=0, rpo=0, kmk=0, m=0, bb=0.5, bki=0, p=0.1)[0]
+                cmds.delete(crv_list[i - 1])
                 cmds.delete(old_crv)
 
             crv_list.append(crv)
@@ -128,8 +139,13 @@ def create_crv_with_obj_list(obj_list: list[str], degree: int=1, crv_subdivision
         cmds.rename(crv, prefix + name + suffix)
         crv = prefix + name + suffix
         cmds.reverseCurve(crv, ch=0)
-        return crv
+        shape = cmds.listRelatives(crv, shapes=True)[0]
+        cmds.rename(shape, crv + "Shape")
     else:
-        return None
+        crv = None
+
+    return crv
+
+    return crv
 
 

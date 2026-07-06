@@ -15,19 +15,22 @@ def get_short_name(long_name: str) -> str:
     return long_name.rsplit("|", 1)[-1]
 
 
-def replace_in_names(name_list: list[str], target_str: str="", replace_by_str: str=""):
+def replace_in_names(name_list: list[str], target_str: str="", replace_by_str: str="") -> list[str]:
     """
     Rename a list (long names or names) by replacing target_str with replace_by_str
     """
     if not name_list:
         name_list = cmds.ls(sl=1, long=True)
 
+    new_name_list = []
     for long_name in name_list:
         short_name = get_short_name(long_name)
 
         if target_str in short_name:
             new_name = short_name.replace(target_str, replace_by_str)
             cmds.rename(long_name, new_name)
+            new_name_list.append(new_name)
+    return new_name_list
 
 
 def add_to_names(name_list: list[str], added_str: str="", index=-1):
@@ -102,16 +105,23 @@ def determine_component_name(base_name:str, prefix:str = "", suffix:str = "", si
     if has_side_one:
         if side_suffixes[0] + "_" in base_name:
             base_name = base_name.replace(side_suffixes[0] + "_", '')
-        base_name = base_name.split(side_suffixes[0])[0]
+        elif base_name.endswith(side_suffixes[0]):
+            base_name = base_name.split(side_suffixes[0])[0]
+        else:
+            base_name = base_name.replace(side_suffixes[0], '')
         return prefix + base_name + suffix + side_suffixes[0]
 
     elif has_side_two:
-        if side_suffixes[-1] + "_" in base_name:
-            base_name = base_name.replace(side_suffixes[-1] + "_", '')
-        base_name = base_name.split(side_suffixes[-1])[0]
-        return prefix + base_name + suffix + side_suffixes[-1]
+        if side_suffixes[1] + "_" in base_name:
+            base_name = base_name.replace(side_suffixes[1] + "_", '')
+        elif base_name.endswith(side_suffixes[1]):
+            base_name = base_name.split(side_suffixes[1])[0]
+        else:
+            base_name = base_name.replace(side_suffixes[1], '')
+        return prefix + base_name + suffix + side_suffixes[1]
 
     return prefix + base_name + suffix
+
 
 def determine_base_name(name: str, prefix:str = "", suffix:str = "", side_suffixes:list[str, str]=[]) -> str:
     """
@@ -124,18 +134,25 @@ def determine_base_name(name: str, prefix:str = "", suffix:str = "", side_suffix
 
     if suffix and suffix in name:
         if suffix + "_" in name:
-            base_name = name.replace(suffix + "_", '')
-        base_name = name.split(suffix)[0]
+            name = name.replace(suffix + "_", '')
+        name = name.split(suffix)[0]
 
     has_side_one, has_side_two = side_suffixes[0] in name, side_suffixes[-1] in name
     if has_side_one:
         if side_suffixes[0] + "_" in name:
-            name = name.replace(side_suffixes[0], '')
+            name = name.replace(side_suffixes[0], '_')
         name = name.split(side_suffixes[0])[0]
 
     elif has_side_two:
         if side_suffixes[-1] + "_" in name:
-            name = name.replace(side_suffixes[-1], '')
+            name = name.replace(side_suffixes[-1], '_')
         name = name.split(side_suffixes[-1])[0]
 
+    while "__" in name:
+        name = name.replace("__", '_')
+
+    if name.endswith("_"):
+        name = name[:-1]
+
     return name
+
